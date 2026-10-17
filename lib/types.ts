@@ -22,6 +22,7 @@ export type Outfit = {
   occasion: string;
   items: OutfitItem[];
   rationale: string;
+  lockedCategories?: Category[];
 };
 export type WardrobeItem = { id: string; productId: string };
 export type InspirationImage = { id: string; image: string; tag: string };
@@ -38,6 +39,7 @@ export type UserStyleProfile = {
 export type ConversationMessage = {
   id: string;
   role: "user" | "agent";
+  outfits?: Outfit[];
   text: string;
 };
 export type ScanProfile = {

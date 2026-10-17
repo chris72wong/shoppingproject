@@ -1,0 +1,456 @@
+.outfit-card {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  color: #30372b;
+  background: #fbfaf6;
+  border: 1px solid #e4e4db;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+  font: inherit;
+}
+.outfit-card:hover {
+  border-color: #939d80;
+  transform: translateY(-3px);
+}
+.outfit-card:focus-visible,
+.outfit-piece:focus-visible,
+.outfit-dialog button:focus-visible,
+.outfit-dialog a:focus-visible {
+  outline: 3px solid #829663;
+  outline-offset: 3px;
+}
+.outfit-collage {
+  height: 245px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(150deg, #efeee6, #e8e8de);
+}
+.outfit-number {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #7c826f;
+}
+.outfit-garment {
+  position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 6px #55553312);
+  width: 48%;
+  height: 52%;
+}
+.outfit-garment-top {
+  top: 9%;
+  left: 9%;
+  transform: rotate(-7deg);
+}
+.outfit-garment-outerwear {
+  top: 4%;
+  right: 0;
+  transform: rotate(7deg);
+}
+.outfit-garment-bottom {
+  bottom: 4%;
+  left: 30%;
+  height: 58%;
+  width: 41%;
+  transform: rotate(6deg);
+}
+.outfit-garment-shoes {
+  bottom: 5%;
+  left: 1%;
+  height: 32%;
+  width: 39%;
+  transform: rotate(-13deg);
+}
+.outfit-garment-accessory {
+  top: 52%;
+  right: 1%;
+  height: 32%;
+  width: 30%;
+  transform: rotate(9deg);
+}
+.outfit-open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  background: #ffffffb0;
+  color: #586449;
+}
+.outfit-card-copy {
+  padding: 17px 17px 18px;
+}
+.outfit-card-copy h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 7px;
+}
+.outfit-card-copy p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #7a7d70;
+  margin: 0 0 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.outfit-price {
+  font-size: 12px;
+}
+.outfit-price > span {
+  font-size: 10px;
+  color: #878b7d;
+  margin-left: 4px;
+}
+.outfit-dialog {
+  width: min(1010px, calc(100vw - 40px));
+  max-width: 1010px;
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  border: 1px solid #dedfd3;
+  border-radius: 22px;
+  background: #fcfbf7;
+  color: #30372b;
+  box-shadow: 0 30px 120px #20271c35;
+  overflow: auto;
+}
+.outfit-dialog::backdrop {
+  background: #25301f70;
+  backdrop-filter: blur(5px);
+}
+.outfit-dialog-inner {
+  padding: 30px;
+}
+.outfit-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 25px;
+}
+.outfit-eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.9px;
+  color: #7b826d;
+}
+.outfit-detail-header h2 {
+  font-family: Georgia, serif;
+  font-size: 30px;
+  font-weight: 400;
+  margin: 9px 0;
+}
+.outfit-detail-header p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #777e6d;
+  margin: 0;
+  max-width: 630px;
+}
+.outfit-icon-button {
+  display: grid;
+  place-items: center;
+  border: 1px solid #e0e2d6;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.outfit-detail-grid {
+  display: grid;
+  grid-template-columns: 1.08fr 1fr;
+  gap: 30px;
+}
+.outfit-collage-large {
+  height: 430px;
+  border-radius: 13px;
+}
+.outfit-piece {
+  position: absolute;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  background: transparent;
+  padding: 0;
+  width: 49%;
+  height: 54%;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.outfit-piece img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 7px #55553318);
+}
+.outfit-piece-selected {
+  background: #ffffff45;
+  border-color: #a3ad8c88;
+}
+.outfit-piece span {
+  position: absolute;
+  bottom: 5px;
+  left: 5%;
+  right: 5%;
+  padding: 5px;
+  border-radius: 5px;
+  background: #fbfaf6ed;
+  color: #4f5941;
+  font: 10px/1.3 inherit;
+  opacity: 0;
+  transform: rotate(0deg);
+}
+.outfit-piece:hover span,
+.outfit-piece:focus-visible span,
+.outfit-piece-selected span {
+  opacity: 1;
+}
+.outfit-piece.outfit-garment-bottom {
+  height: 59%;
+  width: 44%;
+}
+.outfit-piece.outfit-garment-shoes {
+  height: 31%;
+  width: 40%;
+}
+.outfit-piece.outfit-garment-accessory {
+  height: 31%;
+  width: 30%;
+}
+.outfit-caption {
+  font-size: 11px;
+  color: #7e8472;
+  text-align: center;
+  margin: 12px 0 18px;
+}
+.outfit-text-button {
+  display: block;
+  margin: auto;
+  background: none;
+  color: #697655;
+  font: 12px inherit;
+  border: 0;
+  border-bottom: 1px solid #c6ccbb;
+  padding: 5px 0;
+  cursor: pointer;
+}
+.outfit-reason h3,
+.outfit-product h3 {
+  font-family: Georgia, serif;
+  font-size: 23px;
+  font-weight: 400;
+  margin: 8px 0 12px;
+}
+.outfit-reason > p,
+.outfit-fit > p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #69715f;
+  margin: 0;
+}
+.outfit-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 17px 0 23px;
+}
+.outfit-tags span {
+  font-size: 10px;
+  color: #687356;
+  background: #eeefe6;
+  padding: 5px 9px;
+  border-radius: 20px;
+}
+.outfit-product {
+  padding-top: 22px;
+  border-top: 1px solid #e3e4d9;
+}
+.outfit-product h3 {
+  font-size: 22px;
+}
+.outfit-product-meta {
+  font-size: 12px;
+  margin: 0 0 12px;
+  color: #59654b;
+}
+.outfit-source {
+  display: inline-block;
+  border: 1px solid #e0dfd0;
+  border-radius: 5px;
+  padding: 4px 7px;
+  color: #827b60;
+  font-size: 10px;
+}
+.outfit-data-note {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #838774;
+  margin: 10px 0;
+}
+.outfit-retailer-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #cdd2c1;
+  border-radius: 7px;
+  padding: 11px 13px;
+  margin: 15px 0;
+  color: #4f5d40;
+  text-decoration: none;
+  font-size: 12px;
+}
+.outfit-fit {
+  padding-top: 10px;
+}
+.outfit-fit h4 {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.outfit-fit dl {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.outfit-fit dl > div {
+  margin: 12px 0;
+}
+.outfit-fit dt {
+  color: #858a78;
+}
+.outfit-fit dd {
+  margin: 3px 0;
+  color: #56604c;
+}
+.outfit-fit > a {
+  font-size: 11px;
+  color: #5d7048;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.outfit-model-section {
+  margin-top: 15px;
+}
+.outfit-model-section > p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #7c816f;
+  background: #efefe6;
+  padding: 12px;
+  border-radius: 8px;
+}
+.outfit-model {
+  height: 340px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #deded4;
+}
+.outfit-preview-loading {
+  font-size: 12px;
+  padding: 30px;
+  text-align: center;
+}
+.outfit-detail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 27px;
+  padding-top: 22px;
+  border-top: 1px solid #e3e4d9;
+}
+.outfit-detail-footer strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+}
+.outfit-detail-footer > div > span {
+  display: block;
+  font-size: 10px;
+  color: #818774;
+  margin-top: 5px;
+}
+.outfit-detail-actions {
+  display: flex;
+  gap: 9px;
+}
+.outfit-primary,
+.outfit-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  padding: 11px 15px;
+  font: 12px inherit;
+  cursor: pointer;
+}
+.outfit-primary {
+  border: 1px solid #5a6946;
+  background: #5a6946;
+  color: #fff;
+}
+.outfit-secondary {
+  border: 1px solid #d8dcce;
+  background: transparent;
+  color: #637052;
+}
+@media (max-width: 700px) {
+  .outfit-dialog {
+    width: calc(100vw - 18px);
+    max-height: calc(100dvh - 18px);
+    border-radius: 16px;
+  }
+  .outfit-dialog-inner {
+    padding: 20px;
+  }
+  .outfit-detail-header h2 {
+    font-size: 26px;
+  }
+  .outfit-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .outfit-collage-large {
+    height: 370px;
+  }
+  .outfit-detail-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .outfit-detail-actions {
+    width: 100%;
+  }
+  .outfit-detail-actions > button {
+    flex: 1;
+  }
+  .outfit-collage {
+    height: 230px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .outfit-card,
+  .outfit-piece {
+    transition: none;
+  }
+  .outfit-card:hover {
+    transform: none;
+  }
+}

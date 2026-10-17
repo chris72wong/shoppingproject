@@ -1,3 +1,4 @@
+import { snapshotOutfits } from "./conversation";
 import {
   Product,
   Outfit,
@@ -24,6 +25,12 @@ const validOutfit = (o: Outfit) =>
   typeof o.name === "string" &&
   typeof o.description === "string" &&
   typeof o.rationale === "string" &&
+  typeof o.occasion === "string" &&
+  (o.lockedCategories === undefined ||
+    (Array.isArray(o.lockedCategories) &&
+      o.lockedCategories.every((c) =>
+        ["top", "bottom", "shoes", "outerwear", "accessory"].includes(c),
+      ))) &&
   strings(o.tags) &&
   Array.isArray(o.items) &&
   o.items.length > 0 &&
@@ -40,9 +47,11 @@ export function restore(raw: string | null, defaults: Store): Store {
       Array.isArray(s.outfits) &&
       s.outfits.length === 3 &&
       s.outfits.every(validOutfit)
-        ? s.outfits
+        ? snapshotOutfits(s.outfits)
         : defaults.outfits;
-    s.saved = Array.isArray(s.saved) ? s.saved.filter(validOutfit) : [];
+    s.saved = Array.isArray(s.saved)
+      ? snapshotOutfits(s.saved.filter(validOutfit))
+      : [];
     s.wardrobe = Array.isArray(s.wardrobe)
       ? s.wardrobe.filter(
           (i) =>
@@ -58,6 +67,29 @@ export function restore(raw: string | null, defaults: Store): Store {
             ["user", "agent"].includes(m.role),
         )
       : [];
+    s.messages = s.messages.map((message) => {
+      const { outfits, ...rest } = message;
+      return {
+        ...rest,
+        ...(Array.isArray(outfits) &&
+        outfits.length === 3 &&
+        outfits.every(validOutfit)
+          ? { outfits: snapshotOutfits(outfits) }
+          : {}),
+      };
+    });
+    // Old sessions stored looks separately from the transcript. Recover only
+    // the latest result; earlier historical looks cannot be reconstructed.
+    if (!s.messages.some((message) => message.outfits?.length)) {
+      const lastAgent = s.messages
+        .map((message) => message.role)
+        .lastIndexOf("agent");
+      if (lastAgent >= 0)
+        s.messages[lastAgent] = {
+          ...s.messages[lastAgent],
+          outfits: snapshotOutfits(s.outfits),
+        };
+    }
     s.custom = Array.isArray(s.custom)
       ? s.custom.filter(
           (p) =>
@@ -123,7 +155,7 @@ export function restore(raw: string | null, defaults: Store): Store {
     s.scan.fit = ["Regular", "Oversized", "Fitted"].includes(s.scan.fit)
       ? s.scan.fit
       : "Regular";
-    s.selected = Math.max(0, Math.min(2, Math.floor(Number(s.selected) || 0)));
+    s.selected = Math.max(-1, Math.min(2, Math.floor(Number(s.selected) || 0)));
     return s;
   } catch {
     return defaults;
