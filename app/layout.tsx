@@ -3,7 +3,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FORM — Your personal style, figured out.",
   description:
-    "Find and refine three considered outfits in one conversation with your personal style assistant.",
+    "Explore outfits on your avatar, swap affordable pieces, and refine your look with your personal style assistant.",
 };
 export default function RootLayout({
   children,

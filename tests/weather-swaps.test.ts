@@ -58,3 +58,19 @@ test("similar choices respect category locks and rank affordable items first", (
   assert.deepEqual(similarItems(outfit, piece, [], 250, []), []);
   assert.equal(swapItem(outfit, piece.id, product("jeans"), []), outfit);
 });
+
+test("device coordinates fetch weather directly without a city search", async () => {
+  let calls = 0;
+  const result = await fetchWeather({ latitude: 49.28, longitude: -123.12 }, async (input) => {
+    calls++;
+    const url = new URL(String(input));
+    assert.equal(url.hostname, "api.open-meteo.com");
+    assert.equal(url.searchParams.get("latitude"), "49.28");
+    assert.equal(url.searchParams.get("longitude"), "-123.12");
+    return Response.json({ current: { time: "2026-10-17T12:00", temperature_2m: 12, apparent_temperature: 9, precipitation: 2, wind_speed_10m: 20 }, daily: { temperature_2m_min: [8], temperature_2m_max: [14], precipitation_probability_max: [90] } });
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.location, "Your current location");
+  assert.equal(result.feelsLike, 9);
+  await assert.rejects(fetchWeather({ latitude: 91, longitude: 0 }, async () => { throw new Error("should not fetch"); }), (error: unknown) => error instanceof Error && error.name === "ZodError");
+});

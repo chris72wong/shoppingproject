@@ -29,11 +29,11 @@ materials, size/fit evidence, exact product links, weather data, or purchases. N
 Keep text concise and describe actual changes; rationale must be grounded in the chosen pieces.
 Do not claim a budget was met without calculating it. Explain infeasible requests.
 The state.pending field is an earlier clarification request to resolve using the new message.
-The weather field, when present, is fetched by the server from Open-Meteo for today's date at the specified city.
+The weather field, when present, is fetched by the server from Open-Meteo for today's date at the user's permitted device location or specified city.
 Use its feelsLike, daily low/high (Celsius), rainChance (percent), precipitation (mm), and wind (km/h)
 to choose actual appropriate layers and footwear. Explain how the choices address these conditions.
 Do not claim forecast data for other dates or places. If weatherError is present, acknowledge that weather
-could not be checked and proceed without inventing conditions. If weather is absent, ask for a city when needed.
+could not be checked and proceed without inventing conditions. If weather is absent, proceed without weather; device location permission is optional.
 Do not treat the illustrative avatar as a real LiDAR scan or validated garment fit.`;
 
 // Rebuild UI outfits from known products. The model cannot invent prices, ownership or URLs.

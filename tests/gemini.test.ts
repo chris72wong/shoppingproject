@@ -119,3 +119,10 @@ test("origin check uses the browser host when Next binds to 0.0.0.0", async () =
   assert.equal((await post("http://localhost:3001")).status, 403);
   assert.equal((await post("https://localhost:3000")).status, 403);
 });
+
+test("chat accepts permitted device coordinates and rejects out-of-range coordinates", () => {
+  assert.equal(chatRequestSchema.safeParse({ ...request(), location: { latitude: 49.28, longitude: -123.12 } }).success, true);
+  for (const location of [{ latitude: 91, longitude: 0 }, { latitude: 0, longitude: -181 }, { latitude: "49", longitude: 0 }]) {
+    assert.equal(chatRequestSchema.safeParse({ ...request(), location }).success, false);
+  }
+});

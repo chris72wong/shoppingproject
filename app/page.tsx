@@ -1,15 +1,12 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUp, ArrowUpRight, Check, Pencil, Plus, Sparkles, X } from "lucide-react";
-import dynamic from "next/dynamic";
 import { generate } from "@/lib/agent";
 import type { ConversationResponse } from "@/lib/conversation";
 import { restore, Store } from "@/lib/storage";
 import { ConversationMessage, Outfit, Product } from "@/lib/types";
 import { swapItem } from "@/lib/swaps";
-import { OutfitCard } from "@/components/OutfitCard";
-import OutfitDetail from "@/components/OutfitDetail";
-const Avatar = dynamic(() => import("@/components/Avatar"), { ssr: false });
+import OutfitStudio from "@/components/OutfitStudio";
 const profile: Store["profile"] = {
   styles: ["minimalist", "casual elevated"],
   colors: ["Stone", "Olive", "Black"],
@@ -58,10 +55,40 @@ export default function App() {
     [error, setError] = useState(""),
     [pending, setPending] = useState("");
   const [selection, setSelection] = useState<Selection | null>(null),
-    [detail, setDetail] = useState<Selection | null>(null);
+    [viewIndex, setViewIndex] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const [weatherCity, setWeatherCity] = useState("");
+  const [locationStatus, setLocationStatus] = useState("Requesting location for local weather…");
+  const locationRequest = useRef<Promise<{ latitude: number; longitude: number } | undefined> | null>(null);
+  const locationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function locate() {
+    setLocationStatus("Requesting location for local weather…");
+    locationRequest.current = new Promise((resolve) => {
+      if (!navigator.geolocation || !window.isSecureContext) {
+        setLocationStatus("Location unavailable. Styling without local weather.");
+        resolve(undefined); return;
+      }
+      // Permission prompts can remain open beyond geolocation's own timeout.
+      locationTimer.current = setTimeout(() => {
+        setLocationStatus("Location not available yet. Styling without local weather.");
+        resolve(undefined);
+      }, 12000);
+      navigator.geolocation.getCurrentPosition(({ coords }) => {
+        if (locationTimer.current) clearTimeout(locationTimer.current);
+        const location = { latitude: Math.round(coords.latitude * 100) / 100, longitude: Math.round(coords.longitude * 100) / 100 };
+        locationRequest.current = Promise.resolve(location);
+        setLocationStatus("Location connected · Local weather included in your requests");
+        resolve(location);
+      }, (cause) => {
+        if (locationTimer.current) clearTimeout(locationTimer.current);
+        setLocationStatus(cause.code === 1 ? "Location permission denied. Styling without local weather." : "Couldn’t find your location. Styling without local weather.");
+        resolve(undefined);
+      }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+    });
+  }
+  useEffect(() => {
+    if (!locationRequest.current) locate();
+  }, []);
   const bottom = useRef<HTMLDivElement>(null),
     composer = useRef<HTMLTextAreaElement>(null),
     controller = useRef<AbortController | null>(null),
@@ -123,13 +150,15 @@ export default function App() {
     controller.current = abort;
     try {
       const hasLooks = history.some((m) => m.outfits?.length);
+      const location = await locationRequest.current;
+      if (abort.signal.aborted) return;
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.any([abort.signal, AbortSignal.timeout(55000)]),
         body: JSON.stringify({
           message: request,
-          weatherCity: weatherCity.trim() || undefined,
+          location,
           history: history.slice(-24).map(({ role, text }) => ({
             role, text: text.slice(0, 2000),
           })),
@@ -171,6 +200,7 @@ export default function App() {
       setPending(result.pending || "");
       if (result.weatherError) setNotice("Weather could not be checked: " + result.weatherError);
       else setNotice("");
+      if (result.outfits) setViewIndex(Math.max(0, result.selected ?? 0));
       if (result.outfits)
         setSelection(
           result.selected !== undefined && result.selected >= 0
@@ -214,7 +244,7 @@ export default function App() {
     if (submitting.current) return;
     setS((v) => ({ ...v, messages: [] }));
     setSelection(null);
-    setDetail(null);
+    setViewIndex(0);
     setPending("");
     setError("");
     setInput("");
@@ -229,14 +259,13 @@ export default function App() {
         : [...v.saved, snapshot([outfit])[0]],
     }));
   }
+  const visible = selection ?? { outfits: s.outfits, index: Math.min(viewIndex, s.outfits.length - 1) };
   function swap(oldId: string, replacement: Product) {
-    if (!detail) return;
-    const current = detail.outfits[detail.index];
+    const current = visible.outfits[visible.index];
     const updated = swapItem(current, oldId, replacement, s.wardrobe.map((i) => i.productId), s.custom);
     if (updated === current) return;
     const replace = (looks: Outfit[]) => looks.map((o) => o.id === current.id && JSON.stringify(o) === JSON.stringify(current) ? snapshot([updated])[0] : o);
-    const context = { ...detail, outfits: replace(detail.outfits) };
-    setDetail(context);
+    const context = { ...visible, outfits: replace(visible.outfits) };
     setSelection(context);
     setS((v) => ({ ...v, outfits: replace(v.outfits), saved: replace(v.saved), messages: v.messages.map((m) => m.outfits ? { ...m, outfits: replace(m.outfits) } : m) }));
   }
@@ -260,16 +289,19 @@ export default function App() {
           <span>New chat</span>
         </button>
       </header>
+      <div className="studio-workspace">
+      <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
+        budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
+        saved={s.saved.some((outfit) => outfit.id === visible.outfits[visible.index].id)} disabled={busy || !ready}
+        onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
+        onSwap={swap} onSave={() => toggleSave(visible.outfits[visible.index])}
+        onFeedback={(text) => send(text, visible)} />
       <main
         className={"conversation " + (started ? "has-messages" : "is-empty")}
         id="main-content"
       >
         {!started ? (
           <section className="welcome" aria-labelledby="welcome-title">
-            <div className="welcome-avatar">
-              <Avatar outfit={s.outfits[0]} profile={s.scan} extra={s.custom} />
-            </div>
-            <p className="preview-note">Your body preview · illustrative until scan import is connected</p>
             <p className="eyebrow">YOUR PERSONAL STYLE, FIGURED OUT</p>
             <h1 id="welcome-title">
               Good style starts
@@ -322,24 +354,7 @@ export default function App() {
                   <button className="edit-prompt-button" disabled={busy} aria-label={"Edit prompt: " + message.text} onClick={() => { setEditing(message.id); setEditText(message.text); }}><Pencil size={12} /> Edit</button>
                 )}
                 {message.weather && <p className="weather-summary">{message.weather.location} · {message.weather.temperature}°C, feels like {message.weather.feelsLike}°C · Today {message.weather.low}–{message.weather.high}°C · Rain {message.weather.rainChance}%<br /><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather by Open-Meteo</a> · Local observation {message.weather.observedAt.replace("T", " ")}</p>}
-                {!!message.outfits?.length && (
-                  <div className="chat-outfits" aria-label="Suggested outfits">
-                    {message.outfits.map((outfit, index) => (
-                      <OutfitCard
-                        key={outfit.id + "-" + index}
-                        outfit={outfit}
-                        index={index}
-                        extra={s.custom}
-                        scan={s.scan}
-                        onOpen={() => {
-                          const context = { outfits: message.outfits!, index };
-                          setDetail(context);
-                          setSelection(context);
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
+                {!!message.outfits?.length && <button className="revisit-looks" disabled={busy} onClick={() => { setSelection({ outfits: message.outfits!, index: 0 }); setViewIndex(0); }}>View these {message.outfits.length} looks ↗</button>}
               </article>
             ))}
             {busy && (
@@ -353,10 +368,7 @@ export default function App() {
           </section>
         )}
         <div className="composer-area">
-          <div className="weather-location">
-            <label htmlFor="weather-city">Dress for today’s weather</label>
-            <input id="weather-city" value={weatherCity} maxLength={100} onChange={(e) => setWeatherCity(e.target.value)} placeholder="City (optional)" disabled={busy} />
-          </div>
+          <div className="weather-location"><span role="status">{locationStatus}</span><button type="button" disabled={busy || locationStatus.startsWith("Requesting")} onClick={locate}>Refresh location</button></div>
           {selection && (
             <div className="selection-context">
               <Check size={13} /> Refining outfit {selection.index + 1}:{" "}
@@ -428,55 +440,15 @@ export default function App() {
         {s.saved.length > 0 && (
           <details className="saved-looks">
             <summary>Saved looks ({s.saved.length})</summary>
-            <div className="chat-outfits">
-              {s.saved.map((outfit, index) => (
-                <OutfitCard
-                  key={outfit.id}
-                  outfit={outfit}
-                  index={index}
-                  extra={s.custom}
-                  scan={s.scan}
-                  onOpen={() => {
-                    const context = {
-                      outfits: [
-                        outfit,
-                        ...s.outfits.filter((o) => o.id !== outfit.id),
-                      ].slice(0, 3),
-                      index: 0,
-                    };
-                    setSelection(context);
-                    setDetail(context);
-                  }}
-                />
-              ))}
-            </div>
+            <div className="saved-look-list">{s.saved.map((outfit) => <button key={outfit.id} disabled={busy} onClick={() => { setSelection({ outfits: [outfit, ...s.outfits.filter((o) => o.id !== outfit.id)].slice(0, 3), index: 0 }); setViewIndex(0); }}>{outfit.name} ↗</button>)}</div>
           </details>
         )}
       </main>
+      </div>
       <footer className="app-footer">
         <span>LESS SEARCHING. MORE YOU.</span>
         <span>Considered looks, made together.</span>
       </footer>
-      {detail && (
-        <OutfitDetail
-          outfit={detail.outfits[detail.index]}
-          index={detail.index}
-          extra={s.custom}
-          scan={s.scan}
-          saved={s.saved.some((o) => o.id === detail.outfits[detail.index].id)}
-          onSwap={swap}
-          budget={s.profile.budget}
-          wardrobe={s.wardrobe.map((i) => i.productId)}
-          onSave={() => toggleSave(detail.outfits[detail.index])}
-          onClose={() => setDetail(null)}
-          onRefine={(text) => {
-            setSelection(detail);
-            setDetail(null);
-            setInput(text);
-            requestAnimationFrame(() => composer.current?.focus());
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -44,8 +44,9 @@ export async function POST(request: Request) {
     if (!parsed.success) return Response.json({ error: "Invalid chat request. Check your message and try again." }, { status: 400, headers });
     let weather;
     let weatherError;
-    if (parsed.data.weatherCity) {
-      try { weather = await fetchWeather(parsed.data.weatherCity, fetch, request.signal); }
+    const location = parsed.data.location ?? parsed.data.weatherCity;
+    if (location) {
+      try { weather = await fetchWeather(location, fetch, request.signal); }
       catch (error) { weatherError = error instanceof Error ? error.message : "Weather is unavailable."; }
     }
     const result = await chatWithGemini(parsed.data, { signal: request.signal, weather, weatherError });

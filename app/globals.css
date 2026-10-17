@@ -530,3 +530,22 @@ p {
 .prompt-edit textarea { width: 100%; resize: vertical; border: 1px solid #a9b298; border-radius: 8px; padding: 10px; background: #fffefa; }
 .prompt-edit p { font-size: 11px; color: var(--muted); }
 .prompt-edit button { font-size: 12px; padding: 8px 12px; border: 1px solid #bec7b0; border-radius: 15px; margin: 10px 8px 0 0; }
+
+/* One avatar, with the conversation alongside it. */
+.studio-workspace { width: min(1380px, 100%); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr); flex: 1; min-height: 0; padding: 24px 36px 0; gap: 36px; }
+.studio-workspace .conversation { width: 100%; padding: 0 0 0 30px; border-left: 1px solid var(--line); }
+.studio-workspace .welcome { display: flex; flex-direction: column; justify-content: center; padding: 25px 0; }
+.studio-workspace .welcome h1 { font-size: clamp(34px, 3.2vw, 48px); }
+.revisit-looks { margin-top: 14px; padding: 9px 14px; border: 1px solid #cdd2c1; border-radius: 20px; color: #5d7045; font-size: 12px; }
+.weather-location { line-height: 1.6; }
+.weather-location button { text-decoration: underline; font-size: 10px; padding: 2px 0; }
+.saved-look-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.saved-look-list button { padding: 8px 12px; border-radius: 15px; border: 1px solid var(--line); }
+@media (max-width: 850px) {
+  .chat-app { height: auto; min-height: 100dvh; }
+  .studio-workspace { display: flex; flex-direction: column; min-height: auto; padding: 22px 18px 0; gap: 24px; }
+  .studio-workspace .conversation { border-left: 0; border-top: 1px solid var(--line); padding: 0; overflow: visible; flex: none; }
+  .studio-workspace .messages { overflow: visible; }
+  .studio-workspace .welcome { padding: 30px 0; }
+  .studio-workspace .composer-area { position: relative; }
+}

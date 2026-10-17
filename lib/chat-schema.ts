@@ -16,6 +16,7 @@ const outfitSchema = z.object({
 export const chatRequestSchema = z.object({
   message: text,
   weatherCity: z.string().trim().min(2).max(100).optional(),
+  location: z.object({ latitude: z.number().finite().min(-90).max(90), longitude: z.number().finite().min(-180).max(180) }).optional(),
   history: z.array(z.object({ role: z.enum(["user", "agent"]), text })).max(24),
   state: z.object({
     profile: profileSchema,
