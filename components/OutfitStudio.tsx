@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowRight, Bookmark, Check, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, RefreshCw, X } from "lucide-react";
 import { product } from "@/lib/catalog";
 import { total } from "@/lib/agent";
 import { similarItems } from "@/lib/swaps";
@@ -12,11 +12,11 @@ import "./outfits.css";
 
 const Avatar = dynamic(() => import("./Avatar"), { ssr: false });
 
-export default function OutfitStudio({ outfits, index, scan, extra, budget, wardrobe, saved, disabled, onSelect, onSwap, onSave, onFeedback }: {
+export default function OutfitStudio({ outfits, index, scan, extra, budget, wardrobe, disabled, onSelect, onSwap, onFeedback }: {
   outfits: Outfit[]; index: number; scan: ScanProfile; extra: Product[];
-  budget: number; wardrobe: string[]; saved: boolean; disabled: boolean;
+  budget: number; wardrobe: string[]; disabled: boolean;
   onSelect: (index: number) => void; onSwap: (id: string, replacement: Product) => void;
-  onSave: () => void; onFeedback: (text: string) => void;
+  onFeedback: (text: string) => void;
 }) {
   const outfit = outfits[index];
   const title = useId();
@@ -81,16 +81,11 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
         )}
       </div>
       <p className="outfit-caption">Hover a garment for details & swaps. Drag to rotate.</p>
-      <div className="avatar-item-controls" aria-label="Explore worn pieces">
-        {pieces.map((item) => <button key={item.id} disabled={disabled} aria-pressed={selected === item.id} onMouseEnter={() => inspect(item.id)} onMouseLeave={() => inspect(null)} onFocus={() => inspect(item.id)} onBlur={() => inspect(null)} onClick={() => { setSelected(item.id); setPinned(true); }}>{item.category}</button>)}
-      </div>
-      <div className="studio-summary"><span>${total(outfit, extra).toFixed(2)} USD <small>estimated new pieces</small></span><button disabled={disabled} onClick={onSave} aria-pressed={saved}>{saved ? <Check size={14} /> : <Bookmark size={14} />}{saved ? "Saved" : "Save look"}</button></div>
       <div className="studio-feedback" aria-label="Give your stylist feedback">
         <button disabled={disabled} onClick={() => onFeedback(`I want to pursue outfit ${index + 1}, ${outfit.name}. Help me refine this look.`)}><Check size={14} />Pursue this look</button>
         <button disabled={disabled} onClick={() => onFeedback(`I like outfit ${index + 1}, ${outfit.name}. Please give me more options in this direction.`)}>More like this</button>
         <button disabled={disabled} onClick={() => onFeedback(`I don't like the concept of outfit ${index + 1}, ${outfit.name}. Please regenerate with a different direction.`)}><RefreshCw size={14} />New direction</button>
       </div>
-      <p className="studio-preview-note">Illustrative avatar · Catalog estimates, excluding tax & shipping</p>
     </section>
   );
 }

@@ -40,7 +40,7 @@ export const stylistPlanSchema = z.object({
   profile: profileSchema,
   updates: z.array(z.object({
     index: z.number().int().min(0).max(2),
-    name: text, description: text, rationale: text, occasion: text, tags: labels,
+    name: text.describe("A short, evocative title describing the actual outfit being worn. Give each generated or refined outfit a fresh title reflecting its current pieces and direction."), description: text, rationale: text, occasion: text, tags: labels,
     productIds: z.array(text).min(3).max(5),
     keepCategories: z.array(categorySchema).max(5),
   })).max(3),

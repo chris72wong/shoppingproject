@@ -1,6 +1,6 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowUp, ArrowUpRight, Check, Pencil, Plus, Sparkles, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, History, Pencil, Plus, Sparkles, X } from "lucide-react";
 import { generate } from "@/lib/agent";
 import type { ConversationResponse } from "@/lib/conversation";
 import { restore, Store } from "@/lib/storage";
@@ -39,11 +39,6 @@ const initial: Store = {
   selected: 0,
 };
 type Selection = { outfits: Outfit[]; index: number };
-const suggestions = [
-  "Everyday outfits under $250",
-  "Something for a dinner out",
-  "Back to school under $100",
-];
 const snapshot = (outfits: Outfit[]) =>
   JSON.parse(JSON.stringify(outfits)) as Outfit[];
 export default function App() {
@@ -57,7 +52,17 @@ export default function App() {
   const [selection, setSelection] = useState<Selection | null>(null),
     [viewIndex, setViewIndex] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const historyDialog = useRef<HTMLDialogElement>(null);
+  const historyButton = useRef<HTMLButtonElement>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  function openHistory() { historyDialog.current?.showModal(); }
+  function closeHistory() { historyDialog.current?.close(); }
+  function editPrompt(message: ConversationMessage) {
+    setEditing(message.id);
+    setInput(message.text);
+    closeHistory();
+    requestAnimationFrame(() => composer.current?.focus());
+  }
   const [locationStatus, setLocationStatus] = useState("Requesting location for local weather…");
   const locationRequest = useRef<Promise<{ latitude: number; longitude: number } | undefined> | null>(null);
   const locationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -129,6 +134,7 @@ export default function App() {
     setBusy(true);
     setError("");
     setInput("");
+    setEditing(null);
     const originalMessages = s.messages;
     const editIndex = editId ? s.messages.findIndex((m) => m.id === editId && m.role === "user") : -1;
     const history = editIndex >= 0 ? s.messages.slice(0, editIndex) : s.messages;
@@ -200,7 +206,7 @@ export default function App() {
       setPending(result.pending || "");
       if (result.weatherError) setNotice("Weather could not be checked: " + result.weatherError);
       else setNotice("");
-      if (result.outfits) setViewIndex(Math.max(0, result.selected ?? 0));
+      if (result.outfits) setViewIndex(Math.max(0, result.selected ?? context?.index ?? 0));
       if (result.outfits)
         setSelection(
           result.selected !== undefined && result.selected >= 0
@@ -219,7 +225,7 @@ export default function App() {
       setS((v) => ({ ...v, messages: originalMessages }));
       if (editIndex >= 0) {
         setEditing(editId!);
-        setEditText(request);
+
         setSelection(selection);
         setPending(pending);
       }
@@ -228,7 +234,7 @@ export default function App() {
           ? cause.message
           : "Gemini took too long to reply. Please try again.",
       );
-      setInput(editIndex >= 0 ? "" : request);
+      setInput(request);
     } finally {
       setBusy(false);
       submitting.current = false;
@@ -238,7 +244,7 @@ export default function App() {
   }
   function submit(event: FormEvent) {
     event.preventDefault();
-    send(input);
+    send(input, selection ?? visible, editing ?? undefined);
   }
   function newConversation() {
     if (submitting.current) return;
@@ -250,14 +256,6 @@ export default function App() {
     setInput("");
     setEditing(null);
     composer.current?.focus();
-  }
-  function toggleSave(outfit: Outfit) {
-    setS((v) => ({
-      ...v,
-      saved: v.saved.some((o) => o.id === outfit.id)
-        ? v.saved.filter((o) => o.id !== outfit.id)
-        : [...v.saved, snapshot([outfit])[0]],
-    }));
   }
   const visible = selection ?? { outfits: s.outfits, index: Math.min(viewIndex, s.outfits.length - 1) };
   function swap(oldId: string, replacement: Product) {
@@ -292,41 +290,25 @@ export default function App() {
       <div className="studio-workspace">
       <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
         budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
-        saved={s.saved.some((outfit) => outfit.id === visible.outfits[visible.index].id)} disabled={busy || !ready}
+        disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
-        onSwap={swap} onSave={() => toggleSave(visible.outfits[visible.index])}
+        onSwap={swap}
         onFeedback={(text) => send(text, visible)} />
       <main
         className={"conversation " + (started ? "has-messages" : "is-empty")}
         id="main-content"
       >
-        {!started ? (
-          <section className="welcome" aria-labelledby="welcome-title">
-            <p className="eyebrow">YOUR PERSONAL STYLE, FIGURED OUT</p>
-            <h1 id="welcome-title">
-              Good style starts
-              <br />
-              with a <em>conversation.</em>
-            </h1>
-            <p className="welcome-description">
-              Tell me what you’re dressing for.
-              <br />
-              We’ll find your look, one message at a time.
-            </p>
-            <div className="suggestions" aria-label="Ideas to get started">
-              {suggestions.map((text) => (
-                <button
-                  key={text}
-                  onClick={() => send(text)}
-                  disabled={!ready || busy}
-                >
-                  {text}
-                  <ArrowUpRight size={14} />
-                </button>
-              ))}
-            </div>
-          </section>
-        ) : (
+        <dialog ref={historyDialog} id="prompt-history" className="history-dialog" aria-labelledby="history-title"
+          onClick={(event) => { if (event.target === event.currentTarget) closeHistory(); }}
+          onClose={() => historyButton.current?.focus()}>
+          <div className="history-panel">
+            <header className="history-heading">
+              <div><p className="eyebrow">YOUR STYLE JOURNEY</p><h2 id="history-title">Prompt history</h2></div>
+              <button type="button" aria-label="Close prompt history" onClick={closeHistory}><X size={20} /></button>
+            </header>
+            <p className="history-intro">Revisit a look, or edit a prompt in the main box to take it in a new direction.</p>
+            <div className="weather-location"><span role="status">{locationStatus}</span><button type="button" disabled={busy || locationStatus.startsWith("Requesting")} onClick={locate}>Refresh location</button></div>
+            {!started && <p className="history-empty">Your prompts will appear here once you start a conversation.</p>}
           <section
             className="messages"
             aria-label="Conversation with your stylist"
@@ -341,20 +323,12 @@ export default function App() {
                     <Sparkles size={14} /> FORM STYLIST
                   </div>
                 )}
-                {editing === message.id ? (
-                  <form className="prompt-edit" onSubmit={(event) => { event.preventDefault(); send(editText, null, message.id); }}>
-                    <label className="sr-only" htmlFor={"edit-" + message.id}>Edit prompt</label>
-                    <textarea id={"edit-" + message.id} value={editText} maxLength={2000} rows={3} autoFocus onChange={(e) => setEditText(e.target.value)} />
-                    <p>Saving regenerates the conversation from this prompt.</p>
-                    <button type="button" onClick={() => setEditing(null)}>Cancel</button>
-                    <button type="submit" disabled={busy || !editText.trim()}>Save & send</button>
-                  </form>
-                ) : <p className="message-text">{message.text}</p>}
-                {message.role === "user" && editing !== message.id && (
-                  <button className="edit-prompt-button" disabled={busy} aria-label={"Edit prompt: " + message.text} onClick={() => { setEditing(message.id); setEditText(message.text); }}><Pencil size={12} /> Edit</button>
+                <p className="message-text">{message.text}</p>
+                {message.role === "user" && (
+                  <button className="edit-prompt-button" disabled={busy} aria-label={"Edit prompt: " + message.text} onClick={() => editPrompt(message)}><Pencil size={12} /> Edit in prompt box</button>
                 )}
                 {message.weather && <p className="weather-summary">{message.weather.location} · {message.weather.temperature}°C, feels like {message.weather.feelsLike}°C · Today {message.weather.low}–{message.weather.high}°C · Rain {message.weather.rainChance}%<br /><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather by Open-Meteo</a> · Local observation {message.weather.observedAt.replace("T", " ")}</p>}
-                {!!message.outfits?.length && <button className="revisit-looks" disabled={busy} onClick={() => { setSelection({ outfits: message.outfits!, index: 0 }); setViewIndex(0); }}>View these {message.outfits.length} looks ↗</button>}
+                {!!message.outfits?.length && <button className="revisit-looks" disabled={busy} onClick={() => { setSelection({ outfits: message.outfits!, index: 0 }); setViewIndex(0); closeHistory(); }}>View these {message.outfits.length} looks ↗</button>}
               </article>
             ))}
             {busy && (
@@ -366,9 +340,21 @@ export default function App() {
             )}
             <div ref={bottom} />
           </section>
-        )}
-        <div className="composer-area">
-          <div className="weather-location"><span role="status">{locationStatus}</span><button type="button" disabled={busy || locationStatus.startsWith("Requesting")} onClick={locate}>Refresh location</button></div>
+            <button className="history-return" type="button" onClick={() => { closeHistory(); requestAnimationFrame(() => composer.current?.focus()); }}>Back to your look</button>
+          </div>
+        </dialog>
+        <div className="composer-area"
+          onTouchCancel={() => { swipeStart.current = null; }}
+          onTouchStart={(event) => { const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }}
+          onTouchEnd={(event) => {
+            const start = swipeStart.current;
+            swipeStart.current = null;
+            const touch = event.changedTouches[0];
+            if (start && touch.clientY - start.y > 55 && Math.abs(touch.clientX - start.x) < 45) openHistory();
+          }}>
+          {busy ? <div className="composer-status" role="status"><Sparkles size={13} /> Putting your look together…</div>
+            : <p className="composer-status">{started ? s.messages.findLast((message) => message.role === "agent")?.text : "Tell me what you’re dressing for. We’ll find your look together."}</p>}
+          {editing && <div className="editing-context"><Pencil size={12} /><span>Editing a past prompt · Sending replaces the conversation from here.</span><button type="button" disabled={busy} onClick={() => { setEditing(null); setInput(""); }}>Cancel</button></div>}
           {selection && (
             <div className="selection-context">
               <Check size={13} /> Refining outfit {selection.index + 1}:{" "}
@@ -409,7 +395,7 @@ export default function App() {
                   !e.nativeEvent.isComposing
                 ) {
                   e.preventDefault();
-                  send(input);
+                  send(input, selection ?? visible, editing ?? undefined);
                 }
               }}
             />
@@ -427,22 +413,17 @@ export default function App() {
               </button>
             </div>
           </form>
-          <p className="disclosure">
-            Chats and style preferences are sent to Google Gemini · Illustrated
-            pieces · USD estimates, excluding tax & shipping
-          </p>
+          <button ref={historyButton} type="button" className="history-toggle" aria-haspopup="dialog" aria-controls="prompt-history" onClick={openHistory}>
+            <span className="history-handle" aria-hidden="true" />
+            <span><History size={13} /> Prompt history{started ? ` · ${s.messages.filter((message) => message.role === "user").length}` : ""}<ChevronDown size={13} /></span>
+          </button>
+          <p className="disclosure">Chats sent to Google Gemini · Illustrated pieces · USD estimates, excluding tax & shipping</p>
           {notice && (
             <p className="storage-notice" role="status">
               {notice}
             </p>
           )}
         </div>
-        {s.saved.length > 0 && (
-          <details className="saved-looks">
-            <summary>Saved looks ({s.saved.length})</summary>
-            <div className="saved-look-list">{s.saved.map((outfit) => <button key={outfit.id} disabled={busy} onClick={() => { setSelection({ outfits: [outfit, ...s.outfits.filter((o) => o.id !== outfit.id)].slice(0, 3), index: 0 }); setViewIndex(0); }}>{outfit.name} ↗</button>)}</div>
-          </details>
-        )}
       </main>
       </div>
       <footer className="app-footer">
