@@ -16,7 +16,8 @@
     "three": "^0.180.0",
     "@react-three/fiber": "^9.4.0",
     "@react-three/drei": "^10.7.0",
-    "lucide-react": "^0.468.0"
+    "lucide-react": "^0.468.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

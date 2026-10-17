@@ -2,7 +2,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUp, ArrowUpRight, Check, Plus, Sparkles, X } from "lucide-react";
 import { generate } from "@/lib/agent";
-import { respond } from "@/lib/conversation";
+import type { ConversationResponse } from "@/lib/conversation";
 import { restore, Store } from "@/lib/storage";
 import { ConversationMessage, Outfit } from "@/lib/types";
 import { OutfitCard } from "@/components/OutfitCard";
@@ -58,7 +58,7 @@ export default function App() {
     [detail, setDetail] = useState<Selection | null>(null);
   const bottom = useRef<HTMLDivElement>(null),
     composer = useRef<HTMLTextAreaElement>(null),
-    timer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    controller = useRef<AbortController | null>(null),
     submitting = useRef(false);
   useEffect(() => {
     try {
@@ -68,7 +68,7 @@ export default function App() {
     }
     setReady(true);
     return () => {
-      if (timer.current) clearTimeout(timer.current);
+      controller.current?.abort();
     };
   }, []);
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function App() {
       block: "end",
     });
   }, [s.messages.length, busy]);
-  function send(text: string, context = selection) {
+  async function send(text: string, context = selection) {
     const request = text.trim();
     if (!request || submitting.current || !ready) return;
     submitting.current = true;
@@ -102,53 +102,81 @@ export default function App() {
       text: request,
     };
     setS((v) => ({ ...v, messages: [...v.messages, user] }));
-    timer.current = setTimeout(() => {
-      try {
-        const hasLooks = s.messages.some((m) => m.outfits?.length);
-        const result = respond(request, {
-          profile: s.profile,
-          outfits: context?.outfits || (hasLooks ? s.outfits : []),
-          selected: context?.index ?? -1,
-          custom: s.custom,
-          wardrobe: s.wardrobe,
-          pending,
-        });
-        const message: ConversationMessage = {
-          id: crypto.randomUUID(),
-          role: "agent",
-          text: result.text,
-          ...(result.outfits ? { outfits: snapshot(result.outfits) } : {}),
-        };
-        setS((v) => ({
-          ...v,
-          profile: result.profile || v.profile,
-          outfits: result.outfits || v.outfits,
-          selected: Math.max(0, result.selected ?? v.selected),
-          messages: [...v.messages, message],
-        }));
-        setPending(result.pending || "");
-        if (result.outfits)
-          setSelection(
-            result.selected !== undefined && result.selected >= 0
-              ? { outfits: result.outfits, index: result.selected }
-              : null,
-          );
-        else if (result.selected !== undefined && result.selected >= 0)
-          setSelection({
-            outfits: context?.outfits || s.outfits,
-            index: result.selected,
-          });
-      } catch {
-        setError(
-          "That request could not be completed. Your previous outfits are still here. Try again.",
+    const abort = new AbortController();
+    controller.current = abort;
+    try {
+      const hasLooks = s.messages.some((m) => m.outfits?.length);
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(55000)]),
+        body: JSON.stringify({
+          message: request,
+          history: s.messages.slice(-24).map(({ role, text }) => ({
+            role, text: text.slice(0, 2000),
+          })),
+          state: {
+            profile: {
+              styles: s.profile.styles, colors: s.profile.colors, avoid: s.profile.avoid,
+              fit: s.profile.fit, budget: s.profile.budget, occasion: s.profile.occasion,
+            },
+            outfits: context?.outfits || (hasLooks ? s.outfits : []),
+            selected: context?.index ?? -1,
+            custom: s.custom.map(({ id, name, brand, category, tags, color, hex, price, retailer }) =>
+              ({ id, name, brand, category, tags, color, hex, price, retailer })),
+            wardrobe: s.wardrobe,
+            pending,
+          },
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok)
+        throw new Error(payload.error || "That request could not be completed. Please try again.");
+      const result = payload as ConversationResponse;
+      const message: ConversationMessage = {
+        id: crypto.randomUUID(),
+        role: "agent",
+        text: result.text,
+        ...(result.outfits ? { outfits: snapshot(result.outfits) } : {}),
+      };
+      setS((v) => ({
+        ...v,
+        profile: result.profile
+          ? { ...v.profile, ...result.profile, weights: v.profile.weights, inspiration: v.profile.inspiration }
+          : v.profile,
+        outfits: result.outfits || v.outfits,
+        selected: Math.max(0, result.selected ?? v.selected),
+        messages: [...v.messages, message],
+      }));
+      setPending(result.pending || "");
+      if (result.outfits)
+        setSelection(
+          result.selected !== undefined && result.selected >= 0
+            ? { outfits: result.outfits, index: result.selected }
+            : null,
         );
-        setInput(request);
-      } finally {
-        setBusy(false);
-        submitting.current = false;
-        composer.current?.focus();
-      }
-    }, 350);
+      else if (result.selected !== undefined && result.selected >= 0)
+        setSelection({
+          outfits: context?.outfits || s.outfits,
+          index: result.selected,
+        });
+      else if (result.selected === -1) setSelection(null);
+    } catch (cause) {
+      if (abort.signal.aborted) return;
+      // Remove this failed turn so retrying does not duplicate it in the transcript.
+      setS((v) => ({ ...v, messages: v.messages.filter((m) => m.id !== user.id) }));
+      setError(
+        cause instanceof Error && cause.name !== "TimeoutError"
+          ? cause.message
+          : "Gemini took too long to reply. Please try again.",
+      );
+      setInput(request);
+    } finally {
+      setBusy(false);
+      submitting.current = false;
+      controller.current = null;
+      composer.current?.focus();
+    }
   }
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -330,8 +358,8 @@ export default function App() {
             </div>
           </form>
           <p className="disclosure">
-            Local styling demo · Illustrated pieces · USD estimates, excluding
-            tax & shipping
+            Chats and style preferences are sent to Google Gemini · Illustrated
+            pieces · USD estimates, excluding tax & shipping
           </p>
           {notice && (
             <p className="storage-notice" role="status">

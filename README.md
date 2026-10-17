@@ -22,7 +22,13 @@ npm run build
 npm start
 ```
 
-No environment variables, credentials, accounts, database, or paid services are required.
+## Gemini setup
+
+Copy `.env.example` to `.env.local`, then set `GEMINI_API_KEY` to a key from [Google AI Studio](https://aistudio.google.com/apikey). Restart the development server after changing it. The default model is `gemini-3.8-flash`; override `GEMINI_MODEL` if your project needs another compatible model. The key stays on the server and must never use a `NEXT_PUBLIC_` prefix. No database is required. Gemini usage is subject to your Google project's quota and billing.
+
+The chat calls the [Gemini Interactions API](https://ai.google.dev/gemini-api/docs/get-started?lang=javascript) through `POST /api/chat`. It includes the latest 24 transcript messages, the current style profile, selected outfits, wardrobe IDs, and catalog text metadata. Body scans, inspiration images, and product image data are excluded. Requests use `store: false` to disable Interactions conversation storage; Google's other applicable data handling terms still apply. Your browser retains the transcript locally.
+
+Without a key, the chat shows a setup message. API failures preserve your outfits and restore your message for retry; they do not silently fall back to keyword matching.
 
 ## Try the conversation
 
@@ -37,7 +43,7 @@ Press Enter to send a message or Shift+Enter for a new line. Start a new chat wi
 
 ## Behavior and limitations
 
-- **Local stylist:** a deterministic rule engine, not an LLM or image-understanding model. It supports selected occasion/style phrases, budgets, item replacements, kept categories, lower-priced alternatives, and styling explanations. Unsupported changes receive a limitation message. Responses and recommendations are computed locally without external model calls.
+- **Gemini stylist:** understands natural-language requests and follow-ups using recent chat history and your style profile. It can ask clarifying questions, generate three looks, select a look, and refine catalog pieces. Structured replies are validated on the server; unknown products and changes to locked or owned pieces are rejected. Ownership and purchase totals are derived from catalog/session data. The original deterministic engine remains for initial demo data and regression tests.
 - **Catalog:** thirty representative clothing concepts with local SVG illustrations and estimated USD prices. Totals exclude tax and shipping; previously owned pieces have zero purchase cost. These are not live inventory, discounts, or verified exact retailer SKUs.
 - **Product links:** official collection pages are clearly labeled as browsing destinations, not exact product matches. Category destinations were checked on October 17, 2026. Concepts without an appropriate destination have no shopping link. Supplied external links are unverified and restricted to HTTPS without embedded credentials.
 - **Product evidence:** materials, exact size guides, garment measurements, and customer fit reviews are unavailable for these demo items. Names and illustrations do not establish those facts. Confirm exact product details with the retailer before buying.
@@ -60,6 +66,8 @@ Tests cover styling and budget arithmetic, conversational outfit targeting and r
 ## Code map
 
 - `app/page.tsx`: chat interface, conversation state, local persistence, and saved looks.
+- `app/api/chat/route.ts`: bounded, validated server endpoint with safe API errors.
+- `lib/gemini.ts`, `lib/chat-schema.ts`: Gemini context, structured replies, and catalog-backed outfit validation.
 - `lib/conversation.ts`: conversational targeting, clarification, and refinement rules.
 - `lib/agent.ts`: outfit generation, alternatives, and price arithmetic.
 - `lib/catalog.ts`, `lib/types.ts`, `lib/product-info.ts`: catalog data, types, and honest product/fit disclosures.
