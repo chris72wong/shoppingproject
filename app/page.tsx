@@ -1,12 +1,15 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowUp, ArrowUpRight, Check, Plus, Sparkles, X } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Check, Pencil, Plus, Sparkles, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { generate } from "@/lib/agent";
 import type { ConversationResponse } from "@/lib/conversation";
 import { restore, Store } from "@/lib/storage";
-import { ConversationMessage, Outfit } from "@/lib/types";
+import { ConversationMessage, Outfit, Product } from "@/lib/types";
+import { swapItem } from "@/lib/swaps";
 import { OutfitCard } from "@/components/OutfitCard";
 import OutfitDetail from "@/components/OutfitDetail";
+const Avatar = dynamic(() => import("@/components/Avatar"), { ssr: false });
 const profile: Store["profile"] = {
   styles: ["minimalist", "casual elevated"],
   colors: ["Stone", "Olive", "Black"],
@@ -56,6 +59,9 @@ export default function App() {
     [pending, setPending] = useState("");
   const [selection, setSelection] = useState<Selection | null>(null),
     [detail, setDetail] = useState<Selection | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [weatherCity, setWeatherCity] = useState("");
   const bottom = useRef<HTMLDivElement>(null),
     composer = useRef<HTMLTextAreaElement>(null),
     controller = useRef<AbortController | null>(null),
@@ -89,43 +95,55 @@ export default function App() {
       block: "end",
     });
   }, [s.messages.length, busy]);
-  async function send(text: string, context = selection) {
+  async function send(text: string, context = selection, editId?: string) {
     const request = text.trim();
     if (!request || submitting.current || !ready) return;
     submitting.current = true;
     setBusy(true);
     setError("");
     setInput("");
+    const originalMessages = s.messages;
+    const editIndex = editId ? s.messages.findIndex((m) => m.id === editId && m.role === "user") : -1;
+    const history = editIndex >= 0 ? s.messages.slice(0, editIndex) : s.messages;
+    const requestProfile = editIndex >= 0 ? history.findLast((m) => m.profile)?.profile ?? initial.profile : s.profile;
+    if (editIndex >= 0) {
+      const prior = history.findLast((m) => m.outfits?.length)?.outfits;
+      context = prior ? { outfits: prior, index: -1 } : null;
+      setSelection(null);
+      setPending("");
+      setEditing(null);
+    }
     const user: ConversationMessage = {
       id: crypto.randomUUID(),
       role: "user",
       text: request,
     };
-    setS((v) => ({ ...v, messages: [...v.messages, user] }));
+    setS((v) => ({ ...v, messages: [...history, user] }));
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const hasLooks = s.messages.some((m) => m.outfits?.length);
+      const hasLooks = history.some((m) => m.outfits?.length);
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.any([abort.signal, AbortSignal.timeout(55000)]),
         body: JSON.stringify({
           message: request,
-          history: s.messages.slice(-24).map(({ role, text }) => ({
+          weatherCity: weatherCity.trim() || undefined,
+          history: history.slice(-24).map(({ role, text }) => ({
             role, text: text.slice(0, 2000),
           })),
           state: {
             profile: {
-              styles: s.profile.styles, colors: s.profile.colors, avoid: s.profile.avoid,
-              fit: s.profile.fit, budget: s.profile.budget, occasion: s.profile.occasion,
+              styles: requestProfile.styles, colors: requestProfile.colors, avoid: requestProfile.avoid,
+              fit: requestProfile.fit, budget: requestProfile.budget, occasion: requestProfile.occasion,
             },
             outfits: context?.outfits || (hasLooks ? s.outfits : []),
             selected: context?.index ?? -1,
             custom: s.custom.map(({ id, name, brand, category, tags, color, hex, price, retailer }) =>
               ({ id, name, brand, category, tags, color, hex, price, retailer })),
             wardrobe: s.wardrobe,
-            pending,
+            pending: editIndex >= 0 ? "" : pending,
           },
         }),
       });
@@ -137,18 +155,22 @@ export default function App() {
         id: crypto.randomUUID(),
         role: "agent",
         text: result.text,
+        weather: result.weather,
+        profile: result.profile ?? requestProfile,
         ...(result.outfits ? { outfits: snapshot(result.outfits) } : {}),
       };
       setS((v) => ({
         ...v,
         profile: result.profile
           ? { ...v.profile, ...result.profile, weights: v.profile.weights, inspiration: v.profile.inspiration }
-          : v.profile,
-        outfits: result.outfits || v.outfits,
+          : requestProfile,
+        outfits: result.outfits || context?.outfits || (editIndex >= 0 ? initial.outfits : v.outfits),
         selected: Math.max(0, result.selected ?? v.selected),
         messages: [...v.messages, message],
       }));
       setPending(result.pending || "");
+      if (result.weatherError) setNotice("Weather could not be checked: " + result.weatherError);
+      else setNotice("");
       if (result.outfits)
         setSelection(
           result.selected !== undefined && result.selected >= 0
@@ -164,13 +186,19 @@ export default function App() {
     } catch (cause) {
       if (abort.signal.aborted) return;
       // Remove this failed turn so retrying does not duplicate it in the transcript.
-      setS((v) => ({ ...v, messages: v.messages.filter((m) => m.id !== user.id) }));
+      setS((v) => ({ ...v, messages: originalMessages }));
+      if (editIndex >= 0) {
+        setEditing(editId!);
+        setEditText(request);
+        setSelection(selection);
+        setPending(pending);
+      }
       setError(
         cause instanceof Error && cause.name !== "TimeoutError"
           ? cause.message
           : "Gemini took too long to reply. Please try again.",
       );
-      setInput(request);
+      setInput(editIndex >= 0 ? "" : request);
     } finally {
       setBusy(false);
       submitting.current = false;
@@ -190,6 +218,7 @@ export default function App() {
     setPending("");
     setError("");
     setInput("");
+    setEditing(null);
     composer.current?.focus();
   }
   function toggleSave(outfit: Outfit) {
@@ -199,6 +228,17 @@ export default function App() {
         ? v.saved.filter((o) => o.id !== outfit.id)
         : [...v.saved, snapshot([outfit])[0]],
     }));
+  }
+  function swap(oldId: string, replacement: Product) {
+    if (!detail) return;
+    const current = detail.outfits[detail.index];
+    const updated = swapItem(current, oldId, replacement, s.wardrobe.map((i) => i.productId), s.custom);
+    if (updated === current) return;
+    const replace = (looks: Outfit[]) => looks.map((o) => o.id === current.id && JSON.stringify(o) === JSON.stringify(current) ? snapshot([updated])[0] : o);
+    const context = { ...detail, outfits: replace(detail.outfits) };
+    setDetail(context);
+    setSelection(context);
+    setS((v) => ({ ...v, outfits: replace(v.outfits), saved: replace(v.saved), messages: v.messages.map((m) => m.outfits ? { ...m, outfits: replace(m.outfits) } : m) }));
   }
   const started = s.messages.length > 0;
   return (
@@ -226,9 +266,10 @@ export default function App() {
       >
         {!started ? (
           <section className="welcome" aria-labelledby="welcome-title">
-            <div className="stylist-mark">
-              <Sparkles size={22} strokeWidth={1.3} />
+            <div className="welcome-avatar">
+              <Avatar outfit={s.outfits[0]} profile={s.scan} extra={s.custom} />
             </div>
+            <p className="preview-note">Your body preview · illustrative until scan import is connected</p>
             <p className="eyebrow">YOUR PERSONAL STYLE, FIGURED OUT</p>
             <h1 id="welcome-title">
               Good style starts
@@ -268,7 +309,19 @@ export default function App() {
                     <Sparkles size={14} /> FORM STYLIST
                   </div>
                 )}
-                <p className="message-text">{message.text}</p>
+                {editing === message.id ? (
+                  <form className="prompt-edit" onSubmit={(event) => { event.preventDefault(); send(editText, null, message.id); }}>
+                    <label className="sr-only" htmlFor={"edit-" + message.id}>Edit prompt</label>
+                    <textarea id={"edit-" + message.id} value={editText} maxLength={2000} rows={3} autoFocus onChange={(e) => setEditText(e.target.value)} />
+                    <p>Saving regenerates the conversation from this prompt.</p>
+                    <button type="button" onClick={() => setEditing(null)}>Cancel</button>
+                    <button type="submit" disabled={busy || !editText.trim()}>Save & send</button>
+                  </form>
+                ) : <p className="message-text">{message.text}</p>}
+                {message.role === "user" && editing !== message.id && (
+                  <button className="edit-prompt-button" disabled={busy} aria-label={"Edit prompt: " + message.text} onClick={() => { setEditing(message.id); setEditText(message.text); }}><Pencil size={12} /> Edit</button>
+                )}
+                {message.weather && <p className="weather-summary">{message.weather.location} · {message.weather.temperature}°C, feels like {message.weather.feelsLike}°C · Today {message.weather.low}–{message.weather.high}°C · Rain {message.weather.rainChance}%<br /><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather by Open-Meteo</a> · Local observation {message.weather.observedAt.replace("T", " ")}</p>}
                 {!!message.outfits?.length && (
                   <div className="chat-outfits" aria-label="Suggested outfits">
                     {message.outfits.map((outfit, index) => (
@@ -277,6 +330,7 @@ export default function App() {
                         outfit={outfit}
                         index={index}
                         extra={s.custom}
+                        scan={s.scan}
                         onOpen={() => {
                           const context = { outfits: message.outfits!, index };
                           setDetail(context);
@@ -299,6 +353,10 @@ export default function App() {
           </section>
         )}
         <div className="composer-area">
+          <div className="weather-location">
+            <label htmlFor="weather-city">Dress for today’s weather</label>
+            <input id="weather-city" value={weatherCity} maxLength={100} onChange={(e) => setWeatherCity(e.target.value)} placeholder="City (optional)" disabled={busy} />
+          </div>
           {selection && (
             <div className="selection-context">
               <Check size={13} /> Refining outfit {selection.index + 1}:{" "}
@@ -377,6 +435,7 @@ export default function App() {
                   outfit={outfit}
                   index={index}
                   extra={s.custom}
+                  scan={s.scan}
                   onOpen={() => {
                     const context = {
                       outfits: [
@@ -405,6 +464,9 @@ export default function App() {
           extra={s.custom}
           scan={s.scan}
           saved={s.saved.some((o) => o.id === detail.outfits[detail.index].id)}
+          onSwap={swap}
+          budget={s.profile.budget}
+          wardrobe={s.wardrobe.map((i) => i.productId)}
           onSave={() => toggleSave(detail.outfits[detail.index])}
           onClose={() => setDetail(null)}
           onRefine={(text) => {

@@ -1,4 +1,5 @@
 import { ChatError, chatRequestSchema, chatWithGemini } from "../../../lib/gemini";
+import { fetchWeather } from "../../../lib/weather";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,7 +42,14 @@ export async function POST(request: Request) {
     }
     const parsed = chatRequestSchema.safeParse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
     if (!parsed.success) return Response.json({ error: "Invalid chat request. Check your message and try again." }, { status: 400, headers });
-    return Response.json(await chatWithGemini(parsed.data, { signal: request.signal }), { headers });
+    let weather;
+    let weatherError;
+    if (parsed.data.weatherCity) {
+      try { weather = await fetchWeather(parsed.data.weatherCity, fetch, request.signal); }
+      catch (error) { weatherError = error instanceof Error ? error.message : "Weather is unavailable."; }
+    }
+    const result = await chatWithGemini(parsed.data, { signal: request.signal, weather, weatherError });
+    return Response.json({ ...result, weather, weatherError }, { headers });
   } catch (error) {
     if (error instanceof ChatError) return Response.json({ error: error.message }, { status: error.status, headers });
     if (error instanceof SyntaxError) return Response.json({ error: "Invalid chat request." }, { status: 400, headers });

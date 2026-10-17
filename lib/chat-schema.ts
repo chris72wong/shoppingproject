@@ -15,6 +15,7 @@ const outfitSchema = z.object({
 });
 export const chatRequestSchema = z.object({
   message: text,
+  weatherCity: z.string().trim().min(2).max(100).optional(),
   history: z.array(z.object({ role: z.enum(["user", "agent"]), text })).max(24),
   state: z.object({
     profile: profileSchema,

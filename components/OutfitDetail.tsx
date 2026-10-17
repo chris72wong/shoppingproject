@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ArrowUpRight, Bookmark, Check, MessageCircle, X } from "lucide-react";
 import { product } from "@/lib/catalog";
 import { getProductInfo } from "@/lib/product-info";
+import { similarItems } from "@/lib/swaps";
 import { Outfit, Product, ScanProfile } from "@/lib/types";
 import "./outfits.css";
 
@@ -24,6 +25,9 @@ export default function OutfitDetail({
   onRefine,
   onSave,
   saved,
+  onSwap,
+  budget,
+  wardrobe,
 }: {
   outfit: Outfit;
   index: number;
@@ -33,21 +37,34 @@ export default function OutfitDetail({
   onRefine: (text: string) => void;
   onSave: () => void;
   saved: boolean;
+  onSwap: (productId: string, replacement: Product) => void;
+  budget: number;
+  wardrobe: string[];
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
   const titleId = useId();
-  const [selected, setSelected] = useState(0);
-  const [showModel, setShowModel] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [swapping, setSwapping] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pieces = outfit.items.map((item) => product(item.productId, extra));
-  const selectedIndex = Math.min(selected, Math.max(0, pieces.length - 1));
+  const selectedIndex = pieces.findIndex((p) => p.id === selected);
   const piece = pieces[selectedIndex];
   const info = piece ? getProductInfo(piece) : null;
   const total = outfit.items.reduce(
     (sum, item, i) => sum + (item.owned ? 0 : pieces[i].price),
     0,
   );
+  const locked = piece && outfit.lockedCategories?.includes(piece.category);
+  const choices = piece ? similarItems(outfit, piece, extra, budget, wardrobe) : [];
+  function inspect(id: string | null) {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    if (swapping) return;
+    if (id) setSelected(id);
+    else hoverTimer.current = setTimeout(() => setSelected(null), 250);
+  }
+  useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }, []);
 
   useEffect(() => {
     const previous =
@@ -114,49 +131,23 @@ export default function OutfitDetail({
         </header>
         <div className="outfit-detail-grid">
           <div className="outfit-detail-visual">
-            <div
-              className="outfit-collage outfit-collage-large"
-              aria-label="Select an item to view its details"
-            >
-              {pieces.map((item, i) => (
-                <button
-                  type="button"
-                  key={`${item.id}-${i}`}
-                  className={`outfit-piece outfit-garment-${item.category}${selectedIndex === i ? " outfit-piece-selected" : ""}`}
-                  onMouseEnter={() => setSelected(i)}
-                  onFocus={() => setSelected(i)}
-                  onClick={() => setSelected(i)}
-                  aria-pressed={selectedIndex === i}
-                  aria-label={`View ${item.name}`}
-                >
-                  <img src={item.image} alt={item.name} />
-                  <span>{item.name}</span>
+            <div className="outfit-model outfit-model-main" onMouseLeave={() => inspect(null)}>
+              <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} />
+            </div>
+            <p className="outfit-caption">Drag to rotate. Hover a garment to see its details.</p>
+            <div className="avatar-item-controls" aria-label="Explore worn pieces">
+              {pieces.map((item) => (
+                <button type="button" key={item.id}
+                  onMouseEnter={() => inspect(item.id)} onMouseLeave={() => inspect(null)}
+                  onFocus={() => inspect(item.id)} onBlur={(event) => {
+                    if (!event.relatedTarget || !(event.relatedTarget as HTMLElement).closest(".outfit-product")) inspect(null);
+                  }}
+                  onClick={() => { setSelected(item.id); setSwapping(!outfit.lockedCategories?.includes(item.category)); }}>
+                  {item.category}
                 </button>
               ))}
             </div>
-            <p className="outfit-caption">
-              Hover, tap, or focus a piece to explore it.
-            </p>
-            <button
-              type="button"
-              className="outfit-text-button"
-              aria-expanded={showModel}
-              onClick={() => setShowModel(!showModel)}
-            >
-              {showModel ? "Hide" : "Show"} illustrative 3D preview
-            </button>
-            {showModel && (
-              <div className="outfit-model-section">
-                <p>
-                  Illustration only. This mannequin shows colors and
-                  proportions; it does not simulate garments, LiDAR scanning, or
-                  predict fit on your body.
-                </p>
-                <div className="outfit-model">
-                  <Avatar outfit={outfit} profile={scan} extra={extra} />
-                </div>
-              </div>
-            )}
+            <p className="outfit-data-note">Illustrative mannequin using profile proportions. LiDAR scan import and garment simulation are not connected yet.</p>
           </div>
           <div className="outfit-detail-copy">
             <section className="outfit-reason">
@@ -173,6 +164,8 @@ export default function OutfitDetail({
               <section
                 className="outfit-product"
                 aria-label="Selected product details"
+                onMouseEnter={() => inspect(piece.id)}
+                onMouseLeave={() => inspect(null)}
               >
                 <span className="outfit-eyebrow">{piece.brand}</span>
                 <h3>{piece.name}</h3>
@@ -199,6 +192,23 @@ export default function OutfitDetail({
                   <p className="outfit-data-note">
                     No verified product link is available for this piece.
                   </p>
+                )}
+                <button type="button" className="outfit-secondary" disabled={locked}
+                  onClick={() => setSwapping(!swapping)} aria-expanded={swapping}>
+                  {locked ? "This category is kept" : swapping ? "Close similar items" : "Swap for a similar item"}
+                </button>
+                {swapping && !locked && (
+                  <div className="swap-choices" aria-label="Similar items">
+                    <p className="outfit-data-note">Same category, ranked by style, color and budget. Preview updates immediately.</p>
+                    {choices.length === 0 && <p>No alternatives in the catalog.</p>}
+                    {choices.map((candidate) => (
+                      <button type="button" className="swap-choice" key={candidate.id}
+                        onClick={() => { onSwap(piece.id, candidate); setSelected(candidate.id); }}>
+                        <img src={candidate.image} alt="" />
+                        <span>{candidate.name}<small>{candidate.color} · {wardrobe.includes(candidate.id) ? "Owned" : "$" + candidate.price + " USD"}</small></span>
+                      </button>
+                    ))}
+                  </div>
                 )}
                 <div className="outfit-fit">
                   <h4>Fit & fabric</h4>

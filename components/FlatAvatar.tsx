@@ -3,9 +3,11 @@ import { product } from "@/lib/catalog";
 export function FlatAvatar({
   outfit,
   extra = [],
+  onItem,
 }: {
   outfit: Outfit;
   extra?: Product[];
+  onItem?: (id: string | null) => void;
 }) {
   return (
     <div className="flat-avatar" aria-label="Illustrated outfit preview">
@@ -32,6 +34,8 @@ export function FlatAvatar({
         )
         .map((i) => (
           <img
+            onMouseEnter={() => onItem?.(i.productId)}
+            onMouseLeave={() => onItem?.(null)}
             key={i.productId}
             className={"flat-" + product(i.productId, extra).category}
             src={product(i.productId, extra).image}

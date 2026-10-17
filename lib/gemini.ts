@@ -2,7 +2,7 @@ import { z } from "zod";
 import { catalog } from "./catalog";
 import { snapshotOutfits, type ConversationResponse } from "./conversation";
 import { chatRequestSchema, stylistPlanSchema, type ChatRequest, type StylistPlan } from "./chat-schema";
-import type { Outfit } from "./types";
+import type { Outfit, WeatherContext } from "./types";
 
 export { chatRequestSchema };
 export class ChatError extends Error {
@@ -28,7 +28,13 @@ Owned IDs cost zero. Prices are USD demo estimates, excluding taxes/shipping. Do
 materials, size/fit evidence, exact product links, weather data, or purchases. No checkout is available.
 Keep text concise and describe actual changes; rationale must be grounded in the chosen pieces.
 Do not claim a budget was met without calculating it. Explain infeasible requests.
-The state.pending field is an earlier clarification request to resolve using the new message.`;
+The state.pending field is an earlier clarification request to resolve using the new message.
+The weather field, when present, is fetched by the server from Open-Meteo for today's date at the specified city.
+Use its feelsLike, daily low/high (Celsius), rainChance (percent), precipitation (mm), and wind (km/h)
+to choose actual appropriate layers and footwear. Explain how the choices address these conditions.
+Do not claim forecast data for other dates or places. If weatherError is present, acknowledge that weather
+could not be checked and proceed without inventing conditions. If weather is absent, ask for a city when needed.
+Do not treat the illustrative avatar as a real LiDAR scan or validated garment fit.`;
 
 // Rebuild UI outfits from known products. The model cannot invent prices, ownership or URLs.
 export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): ConversationResponse {
@@ -76,6 +82,7 @@ export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): Conve
 
 export async function chatWithGemini(input: ChatRequest, options: {
   apiKey?: string; model?: string; fetcher?: typeof fetch; signal?: AbortSignal;
+  weather?: WeatherContext; weatherError?: string;
 } = {}): Promise<ConversationResponse> {
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey?.trim()) throw new ChatError("Gemini is not configured. Add GEMINI_API_KEY to .env.local and restart the server.", 503);
@@ -97,6 +104,7 @@ export async function chatWithGemini(input: ChatRequest, options: {
         system_instruction: instructions,
         input: JSON.stringify({
           history: input.history, state: input.state, message: input.message,
+          weather: options.weather, weatherError: options.weatherError,
           catalog: products.map(({ id, name, category, tags, color, price }) => ({ id, name, category, tags, color, price })),
         }),
         response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(stylistPlanSchema) },

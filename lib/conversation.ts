@@ -21,6 +21,8 @@ export type ConversationResponse = {
   selected?: number;
   profile?: UserStyleProfile;
   pending?: string;
+  weather?: import("./types").WeatherContext;
+  weatherError?: string;
 };
 export const snapshotOutfits = (outfits: Outfit[]): Outfit[] =>
   outfits.map((o) => ({

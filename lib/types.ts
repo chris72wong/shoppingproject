@@ -41,6 +41,19 @@ export type ConversationMessage = {
   role: "user" | "agent";
   outfits?: Outfit[];
   text: string;
+  weather?: WeatherContext;
+  profile?: UserStyleProfile;
+};
+export type WeatherContext = {
+  location: string;
+  observedAt: string;
+  temperature: number;
+  feelsLike: number;
+  precipitation: number;
+  wind: number;
+  low: number;
+  high: number;
+  rainChance: number;
 };
 export type ScanProfile = {
   complete: boolean;

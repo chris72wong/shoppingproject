@@ -2,7 +2,7 @@
 import { Component, ReactNode, Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
-import { Outfit, Product, ScanProfile } from "@/lib/types";
+import { Category, Outfit, Product, ScanProfile } from "@/lib/types";
 import { product } from "@/lib/catalog";
 import { Vector2 } from "three";
 import { FlatAvatar } from "./FlatAvatar";
@@ -10,10 +10,12 @@ function Mannequin({
   outfit,
   profile,
   extra,
+  onItem,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
   extra: Product[];
+  onItem?: (id: string | null) => void;
 }) {
   const get = (cat: string) =>
     outfit.items
@@ -41,19 +43,34 @@ function Mannequin({
     color: string,
     key: string,
   ) => (
-    <mesh key={key} position={position} scale={scale} castShadow>
+    <mesh key={key} name={key} position={position} scale={scale} castShadow>
       <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial color={color} roughness={0.85} />
     </mesh>
   );
   return (
     <group
+      onPointerMove={(event) => {
+        if (!onItem) return;
+        event.stopPropagation();
+        const name = event.object.name;
+        const upper: Category = get("outerwear") ? "outerwear" : "top";
+        const regions: Partial<Record<string, Category>> = {
+          shoe: "shoes", hip: "bottom", leg: "bottom", underlayer: "top",
+          accessory: "accessory", torso: upper, sleeve: upper,
+          ...(get("outerwear") ? { arm: "outerwear" as const } : {}),
+        };
+        const category = regions[name];
+        onItem(category ? get(category)?.id ?? null : null);
+      }}
+      onPointerOut={() => onItem?.(null)}
+      onClick={(event) => { event.stopPropagation(); }}
       position={[0, -1.48, 0]}
       scale={[profile.chest / 96, profile.height / 175, profile.hip / 98]}
     >
       {mesh([0, 2.83, 0], [0.185, 0.26, 0.19], skin, "head")}
       {mesh([0, 2.53, 0], [0.09, 0.14, 0.09], skin, "neck")}
-      <mesh position={[0, 1.67, 0]} castShadow scale={[loose, 1, 0.73]}>
+      <mesh name="torso" position={[0, 1.67, 0]} castShadow scale={[loose, 1, 0.73]}>
         <latheGeometry args={[torso, 48]} />
         <meshStandardMaterial color={top} roughness={0.85} />
       </mesh>
@@ -78,7 +95,7 @@ function Mannequin({
             )}
             {mesh([s * 0.08, -0.93, 0], [0.07, 0.12, 0.075], skin, "hand")}
           </group>
-          <mesh position={[s * 0.165, 0.93, 0]} castShadow>
+          <mesh name="leg" position={[s * 0.165, 0.93, 0]} castShadow>
             <cylinderGeometry args={[0.145 * loose, 0.117 * loose, 1.3, 24]} />
             <meshStandardMaterial color={bottom} />
           </mesh>
@@ -86,11 +103,12 @@ function Mannequin({
         </group>
       ))}
       {get("outerwear") && (
-        <mesh position={[0, 2.12, 0.245]}>
-          <boxGeometry args={[0.026, 0.78, 0.016]} />
-          <meshStandardMaterial color="#2d302c" />
+        <mesh name="underlayer" position={[0, 2.13, 0.244]}>
+          <boxGeometry args={[0.12, 0.63, 0.035]} />
+          <meshStandardMaterial color={get("top")?.hex || "#eee"} />
         </mesh>
       )}
+      {get("accessory") && mesh([0.4, 1.58, 0.14], [0.12, 0.18, 0.08], get("accessory")!.hex, "accessory")}
     </group>
   );
 }
@@ -112,12 +130,16 @@ export default function Avatar({
   extra = [],
   angle = 0,
   zoom = 1,
+  onItem,
+  interactive = true,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
   extra?: Product[];
   angle?: number;
   zoom?: number;
+  onItem?: (id: string | null) => void;
+  interactive?: boolean;
 }) {
   const [supported, setSupported] = useState<boolean | null>(null);
   useEffect(() => {
@@ -126,7 +148,7 @@ export default function Avatar({
   }, []);
   const fallback = (
     <div className="avatar-fallback">
-      <FlatAvatar outfit={outfit} extra={extra} />
+      <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} />
       <span>Illustrated preview · 3D unavailable</span>
     </div>
   );
@@ -136,10 +158,11 @@ export default function Avatar({
   return (
     <Boundary fallback={fallback}>
       <Canvas
+        frameloop="demand"
         shadows
         dpr={[1, 1.5]}
         camera={{ position: [0, 1, 5.7], fov: 36 }}
-        aria-label="Interactive 3D fashion mannequin. Drag to rotate and scroll to zoom."
+        aria-label="Interactive 3D fashion mannequin. Drag to rotate."
       >
         <color attach="background" args={["#deded4"]} />
         <ambientLight intensity={1.7} />
@@ -147,7 +170,7 @@ export default function Avatar({
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={null}>
           <group rotation={[0, angle, 0]} scale={zoom}>
-            <Mannequin outfit={outfit} profile={profile} extra={extra} />
+            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} />
           </group>
           <ContactShadows
             position={[0, -1.49, 0]}
@@ -158,6 +181,8 @@ export default function Avatar({
           />
         </Suspense>
         <OrbitControls
+          enabled={interactive}
+          enableZoom={false}
           target={[0, 0, 0]}
           enablePan={false}
           minDistance={3.5}

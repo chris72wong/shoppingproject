@@ -67,11 +67,12 @@ p {
   border: 0;
 }
 .chat-app {
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 .app-header {
+  flex-shrink: 0;
   height: 95px;
   margin: 0 48px;
   border-bottom: 1px solid var(--line);
@@ -112,6 +113,8 @@ p {
   margin: 0 auto;
   padding: 0 32px;
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -119,6 +122,9 @@ p {
   justify-content: center;
 }
 .welcome {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   text-align: center;
   padding: 54px 0 32px;
 }
@@ -176,9 +182,14 @@ p {
   border-color: #c8ceba;
 }
 .composer-area {
-  width: min(700px, 100%);
-  margin: 0 auto;
-  padding: 10px 0 25px;
+  width: 100%;
+  margin: auto 0 0;
+  padding: 14px 0 max(10px, env(safe-area-inset-bottom));
+  position: relative;
+  z-index: 5;
+  background: linear-gradient(transparent, var(--paper) 12px);
+  order: 2;
+  flex-shrink: 0;
 }
 .composer {
   background: #fffefa;
@@ -250,8 +261,8 @@ p {
   line-height: 1.6;
 }
 .app-footer {
+  display: none;
   padding: 22px 48px;
-  display: flex;
   justify-content: space-between;
   color: #8a8d80;
   font-size: 10px;
@@ -261,9 +272,12 @@ p {
   font-size: 9px;
 }
 .messages {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
   padding-top: 35px;
   padding-bottom: 16px;
-  min-height: 260px;
+  min-height: 0;
 }
 .message {
   margin: 0 0 30px;
@@ -300,8 +314,7 @@ p {
   margin-top: 21px;
 }
 .has-messages .composer-area {
-  position: sticky;
-  bottom: 0;
+  position: relative;
   z-index: 5;
   background: linear-gradient(transparent, var(--paper) 12px);
   padding-top: 20px;
@@ -434,6 +447,10 @@ p {
   }
 }
 .saved-looks {
+  order: 1;
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
   margin: 0 auto 24px;
   width: 100%;
   color: var(--muted);
@@ -499,3 +516,17 @@ p {
 .messages > div:last-child {
   scroll-margin-bottom: 240px;
 }
+.welcome-avatar { height: 190px; width: 180px; margin: 0 auto 8px; border-radius: 90px 90px 20px 20px; overflow: hidden; background: #deded4; }
+.preview-note { font-size: 10px; color: var(--muted); margin-bottom: 22px; }
+.welcome { padding-top: 24px; }
+.welcome h1 { font-size: clamp(36px, 4vw, 52px); }
+.weather-location { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 4px 9px; color: #69715e; font-size: 11px; }
+.weather-location input { min-width: 0; width: 170px; border: 1px solid var(--line); border-radius: 16px; padding: 6px 10px; background: #fffefa; }
+.weather-summary { margin-top: 15px; font-size: 11px; line-height: 1.8; color: #64724f; padding: 10px 12px; background: #edf0e5; border-radius: 9px; }
+.weather-summary a { text-decoration: underline; }
+.edit-prompt-button { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #64724f; padding: 5px 0 0; margin-left: auto; }
+.message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompt-edit { width: min(550px, 68vw); }
+.prompt-edit textarea { width: 100%; resize: vertical; border: 1px solid #a9b298; border-radius: 8px; padding: 10px; background: #fffefa; }
+.prompt-edit p { font-size: 11px; color: var(--muted); }
+.prompt-edit button { font-size: 12px; padding: 8px 12px; border: 1px solid #bec7b0; border-radius: 15px; margin: 10px 8px 0 0; }

@@ -1,20 +1,24 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
+import dynamic from "next/dynamic";
 import { product } from "@/lib/catalog";
-import { Outfit, Product } from "@/lib/types";
+import { Outfit, Product, ScanProfile } from "@/lib/types";
 import "./outfits.css";
+const Avatar = dynamic(() => import("./Avatar"), { ssr: false });
 
 export function OutfitCard({
   outfit,
   index,
   extra = [],
   onOpen,
+  scan,
 }: {
   outfit: Outfit;
   index: number;
   extra?: Product[];
   onOpen: () => void;
+  scan: ScanProfile;
 }) {
   const pieces = outfit.items.map((item) => product(item.productId, extra));
   const total = outfit.items.reduce(
@@ -28,17 +32,10 @@ export function OutfitCard({
       onClick={onOpen}
       aria-label={`Explore outfit ${index + 1}: ${outfit.name}`}
     >
-      <div className="outfit-collage" aria-hidden="true">
+      <div className="outfit-card-avatar" aria-hidden="true">
         <span className="outfit-number">0{index + 1}</span>
-        {pieces.map((piece, i) => (
-          <img
-            key={`${piece.id}-${i}`}
-            className={`outfit-garment outfit-garment-${piece.category}`}
-            src={piece.image}
-            alt=""
-            loading="lazy"
-          />
-        ))}
+        <Avatar outfit={outfit} profile={scan} extra={extra} interactive={false} />
+        <span className="avatar-preview-label">Illustrative body preview</span>
         <span className="outfit-open">
           <ArrowUpRight size={18} />
         </span>

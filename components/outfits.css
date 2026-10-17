@@ -19,6 +19,19 @@
   border-color: #939d80;
   transform: translateY(-3px);
 }
+.outfit-card-avatar { height: 220px; position: relative; background: #deded4; }
+.outfit-card-avatar canvas { pointer-events: none; }
+.outfit-card-avatar .outfit-number, .outfit-card-avatar .outfit-open { z-index: 1; }
+.avatar-preview-label { position: absolute; bottom: 12px; left: 12px; font-size: 9px; color: #68705d; }
+.outfit-model-main { height: 460px; }
+.avatar-item-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.avatar-item-controls button { border: 1px solid #cdd2c1; border-radius: 20px; padding: 7px 10px; font-size: 11px; text-transform: capitalize; }
+.avatar-item-controls button:hover, .avatar-item-controls button:focus { background: #e9eddf; }
+.swap-choices { margin-top: 12px; }
+.swap-choice { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 8px; border: 1px solid #dedfd3; border-radius: 8px; margin-bottom: 6px; background: #f4f4ec; }
+.swap-choice img { width: 45px; height: 50px; object-fit: contain; }
+.swap-choice span { font-size: 12px; }
+.swap-choice small { display: block; color: #737c68; margin-top: 5px; font-size: 10px; }
 .outfit-card:focus-visible,
 .outfit-piece:focus-visible,
 .outfit-dialog button:focus-visible,

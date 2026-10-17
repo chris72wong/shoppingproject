@@ -26,13 +26,15 @@ const apiResponse = (value: StylistPlan) => Response.json({ status: "completed",
 test("Gemini receives transcript, selected look, preferences and catalog with server authentication", async () => {
   const input = request();
   const before = structuredClone(input);
-  const reply = await chatWithGemini(input, { apiKey: "test-secret", fetcher: async (url, init) => {
+  const weather = { location: "Vancouver", observedAt: "2026-10-17T12:00", temperature: 12, feelsLike: 9, precipitation: 2, wind: 20, low: 8, high: 14, rainChance: 90 };
+  const reply = await chatWithGemini(input, { apiKey: "test-secret", weather, fetcher: async (url, init) => {
     assert.equal(url, "https://generativelanguage.googleapis.com/v1beta/interactions");
     assert.equal((init?.headers as Record<string, string>)["x-goog-api-key"], "test-secret");
     const body = JSON.parse(init!.body as string);
     assert.equal(body.store, false);
     const context = JSON.parse(body.input);
     assert.deepEqual(context.history, input.history);
+    assert.deepEqual(context.weather, weather);
     assert.equal(context.state.selected, 1);
     assert.deepEqual(context.state.profile, profile);
     assert.ok(context.catalog.some((p: { id: string }) => p.id === "hoodie"));
