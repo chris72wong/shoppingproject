@@ -6,6 +6,7 @@ import type { ConversationResponse } from "@/lib/conversation";
 import { restore, Store } from "@/lib/storage";
 import { ConversationMessage, Outfit, Product } from "@/lib/types";
 import { swapItem } from "@/lib/swaps";
+import VoiceStylist from "@/components/VoiceStylist";
 import OutfitStudio from "@/components/OutfitStudio";
 const profile: Store["profile"] = {
   styles: ["minimalist", "casual elevated"],
@@ -127,14 +128,14 @@ export default function App() {
       block: "end",
     });
   }, [s.messages.length, busy]);
-  async function send(text: string, context = selection, editId?: string) {
+  async function send(text: string, context = selection, editId?: string, source: "text" | "voice" = "text") {
     const request = text.trim();
-    if (!request || submitting.current || !ready) return;
+    if (!request || !ready) throw new Error("The stylist is not ready yet.");
+    if (submitting.current) throw new Error("The stylist is finishing another request. Please try again in a moment.");
     submitting.current = true;
     setBusy(true);
     setError("");
-    setInput("");
-    setEditing(null);
+    if (source === "text") { setInput(""); setEditing(null); }
     const originalMessages = s.messages;
     const editIndex = editId ? s.messages.findIndex((m) => m.id === editId && m.role === "user") : -1;
     const history = editIndex >= 0 ? s.messages.slice(0, editIndex) : s.messages;
@@ -157,7 +158,7 @@ export default function App() {
     try {
       const hasLooks = history.some((m) => m.outfits?.length);
       const location = await locationRequest.current;
-      if (abort.signal.aborted) return;
+      if (abort.signal.aborted) throw new Error("Request cancelled.");
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,6 +220,7 @@ export default function App() {
           index: result.selected,
         });
       else if (result.selected === -1) setSelection(null);
+      return result.text;
     } catch (cause) {
       if (abort.signal.aborted) return;
       // Remove this failed turn so retrying does not duplicate it in the transcript.
@@ -234,17 +236,18 @@ export default function App() {
           ? cause.message
           : "Gemini took too long to reply. Please try again.",
       );
-      setInput(request);
+      if (source === "text") setInput(request);
+      throw cause;
     } finally {
       setBusy(false);
       submitting.current = false;
       controller.current = null;
-      composer.current?.focus();
+      if (source === "text") composer.current?.focus();
     }
   }
   function submit(event: FormEvent) {
     event.preventDefault();
-    send(input, selection ?? visible, editing ?? undefined);
+    void send(input, selection ?? visible, editing ?? undefined).catch(() => {});
   }
   function newConversation() {
     if (submitting.current) return;
@@ -293,7 +296,7 @@ export default function App() {
         disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
         onSwap={swap}
-        onFeedback={(text) => send(text, visible)} />
+        onFeedback={(text) => { void send(text, visible).catch(() => {}); }} />
       <main
         className={"conversation " + (started ? "has-messages" : "is-empty")}
         id="main-content"
@@ -372,6 +375,7 @@ export default function App() {
               {error}
             </p>
           )}
+          <VoiceStylist disabled={!ready || busy} consult={async (message) => { const answer = await send(message, selection ?? visible, undefined, "voice"); if (!answer) throw new Error("The request was cancelled."); return answer; }} />
           <form className="composer" onSubmit={submit}>
             <label className="sr-only" htmlFor="style-prompt">
               Message your stylist
@@ -395,7 +399,7 @@ export default function App() {
                   !e.nativeEvent.isComposing
                 ) {
                   e.preventDefault();
-                  send(input, selection ?? visible, editing ?? undefined);
+                  void send(input, selection ?? visible, editing ?? undefined).catch(() => {});
                 }
               }}
             />
