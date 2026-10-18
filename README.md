@@ -76,3 +76,7 @@ Tests cover styling and budget arithmetic, conversational outfit targeting and r
 - `components/Avatar.tsx`, `components/FlatAvatar.tsx`: illustrative 3D view and illustrated fallback.
 - `app/globals.css`, `components/outfits.css`: responsive styling.
 - `generate-assets.cjs`: rebuild local garment SVGs with `node generate-assets.cjs`.
+
+## Live voice stylist
+
+ElevenAgents voice controls share the Gemini shopping flow and outfit updates. See [voice setup](docs/voice-setup.md) for agent configuration, environment variables, trial verification, and live-call checks.
