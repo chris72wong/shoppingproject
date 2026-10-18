@@ -9,14 +9,16 @@ import { similarItems } from "@/lib/swaps";
 import { getProductInfo } from "@/lib/product-info";
 import type { Outfit, Product, ScanProfile } from "@/lib/types";
 import "./outfits.css";
+import type { BodyPreview } from "./BodyMesh";
 
 const Avatar = dynamic(() => import("./Avatar"), { ssr: false });
 
-export default function OutfitStudio({ outfits, index, scan, extra, budget, wardrobe, disabled, onSelect, onSwap, onFeedback }: {
+export default function OutfitStudio({ outfits, index, scan, extra, budget, wardrobe, disabled, onSelect, onSwap, onFeedback, bodyPreview }: {
   outfits: Outfit[]; index: number; scan: ScanProfile; extra: Product[];
   budget: number; wardrobe: string[]; disabled: boolean;
   onSelect: (index: number) => void; onSwap: (id: string, replacement: Product) => void;
   onFeedback: (text: string) => void;
+  bodyPreview?: BodyPreview;
 }) {
   const outfit = outfits[index];
   const title = useId();
@@ -59,7 +61,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
       <div className="studio-stage">
         <button className="studio-arrow studio-previous" disabled={disabled || outfits.length < 2} onClick={() => navigate(index - 1)} aria-label="Previous outfit"><ArrowLeft size={20} /></button>
         <div className="studio-avatar" ref={preview}>
-          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} />
+          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} bodyPreview={bodyPreview} />
         </div>
         <button className="studio-arrow studio-next" disabled={disabled || outfits.length < 2} onClick={() => navigate(index + 1)} aria-label="Next outfit"><ArrowRight size={20} /></button>
         {piece && info && (
@@ -80,7 +82,8 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
           </aside>
         )}
       </div>
-      <p className="outfit-caption">Hover a garment for details & swaps. Drag to rotate.</p>
+      <p className="outfit-caption">{bodyPreview ? (bodyPreview.simulated ? "Simulated pilot garments · separate from the stylist’s illustrated outfit. Drag to rotate." : "Your body scan · demo clothes are unavailable on this body. Drag to rotate.") : "Hover a garment for details & swaps. Drag to rotate."}</p>
+      {bodyPreview && <div className="studio-feedback" aria-label="Illustrated shopping outfit pieces">{pieces.map(p => <button key={p.id} onClick={() => { setSelected(p.id); setPinned(true); }}>{p.name}</button>)}</div>}
       <div className="studio-feedback" aria-label="Give your stylist feedback">
         <button disabled={disabled} onClick={() => onFeedback(`I want to pursue outfit ${index + 1}, ${outfit.name}. Help me refine this look.`)}><Check size={14} />Pursue this look</button>
         <button disabled={disabled} onClick={() => onFeedback(`I like outfit ${index + 1}, ${outfit.name}. Please give me more options in this direction.`)}>More like this</button>

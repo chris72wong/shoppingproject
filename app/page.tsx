@@ -3,10 +3,12 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUp, Check, ChevronDown, History, Pencil, Plus, Sparkles, X } from "lucide-react";
 import { generate } from "@/lib/agent";
 import type { ConversationResponse } from "@/lib/conversation";
-import { restore, Store } from "@/lib/storage";
+import { restore, serializeStore, Store } from "@/lib/storage";
 import { ConversationMessage, Outfit, Product } from "@/lib/types";
 import { swapItem } from "@/lib/swaps";
 import OutfitStudio from "@/components/OutfitStudio";
+import BodyPanel from "@/components/BodyPanel";
+import type { BodyPreview } from "@/components/BodyMesh";
 const profile: Store["profile"] = {
   styles: ["minimalist", "casual elevated"],
   colors: ["Stone", "Olive", "Black"],
@@ -42,6 +44,7 @@ type Selection = { outfits: Outfit[]; index: number };
 const snapshot = (outfits: Outfit[]) =>
   JSON.parse(JSON.stringify(outfits)) as Outfit[];
 export default function App() {
+  const [bodyPreview, setBodyPreview] = useState<BodyPreview>();
   const [s, setS] = useState<Store>(initial),
     [ready, setReady] = useState(false),
     [input, setInput] = useState(""),
@@ -112,7 +115,7 @@ export default function App() {
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem("form-studio-v1", JSON.stringify(s));
+      localStorage.setItem("form-studio-v1", serializeStore(s));
     } catch {
       setNotice(
         "Storage is unavailable. Your conversation will last for this session.",
@@ -163,6 +166,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.any([abort.signal, AbortSignal.timeout(55000)]),
         body: JSON.stringify({
+          bodyScanId: bodyPreview?.scanId,
           message: request,
           location,
           history: history.slice(-24).map(({ role, text }) => ({
@@ -287,8 +291,10 @@ export default function App() {
           <span>New chat</span>
         </button>
       </header>
+      <BodyPanel onPreview={setBodyPreview} />
       <div className="studio-workspace">
       <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
+        bodyPreview={bodyPreview}
         budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
         disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
