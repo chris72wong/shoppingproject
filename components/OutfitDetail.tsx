@@ -204,7 +204,6 @@ export default function OutfitDetail({
                     {choices.map((candidate) => (
                       <button type="button" className="swap-choice" key={candidate.id}
                         onClick={() => { onSwap(piece.id, candidate); setSelected(candidate.id); }}>
-                        <img src={candidate.image} alt="" />
                         <span>{candidate.name}<small>{candidate.color} · {wardrobe.includes(candidate.id) ? "Owned" : "$" + candidate.price + " USD"}</small></span>
                       </button>
                     ))}

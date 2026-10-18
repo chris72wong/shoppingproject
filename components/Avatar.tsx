@@ -11,11 +11,13 @@ function Mannequin({
   profile,
   extra,
   onItem,
+  onSelectItem,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
   extra: Product[];
   onItem?: (id: string | null) => void;
+  onSelectItem?: (id: string) => void;
 }) {
   const get = (cat: string) =>
     outfit.items
@@ -48,23 +50,29 @@ function Mannequin({
       <meshStandardMaterial color={color} roughness={0.85} />
     </mesh>
   );
+  const itemForRegion = (name: string) => {
+    const upper: Category = get("outerwear") ? "outerwear" : "top";
+    const regions: Partial<Record<string, Category>> = {
+      shoe: "shoes", hip: "bottom", leg: "bottom", underlayer: "top",
+      accessory: "accessory", torso: upper, sleeve: upper,
+      ...(get("outerwear") ? { arm: "outerwear" as const } : {}),
+    };
+    const category = regions[name];
+    return category ? get(category)?.id ?? null : null;
+  };
   return (
     <group
       onPointerMove={(event) => {
         if (!onItem) return;
         event.stopPropagation();
-        const name = event.object.name;
-        const upper: Category = get("outerwear") ? "outerwear" : "top";
-        const regions: Partial<Record<string, Category>> = {
-          shoe: "shoes", hip: "bottom", leg: "bottom", underlayer: "top",
-          accessory: "accessory", torso: upper, sleeve: upper,
-          ...(get("outerwear") ? { arm: "outerwear" as const } : {}),
-        };
-        const category = regions[name];
-        onItem(category ? get(category)?.id ?? null : null);
+        onItem(itemForRegion(event.object.name));
       }}
       onPointerOut={() => onItem?.(null)}
-      onClick={(event) => { event.stopPropagation(); }}
+      onClick={(event) => {
+        event.stopPropagation();
+        const id = itemForRegion(event.object.name) ?? get("top")?.id;
+        if (id && event.delta <= 3) onSelectItem?.(id);
+      }}
       position={[0, -1.48, 0]}
       scale={[profile.chest / 96, profile.height / 175, profile.hip / 98]}
     >
@@ -131,6 +139,7 @@ export default function Avatar({
   angle = 0,
   zoom = 1,
   onItem,
+  onSelectItem,
   interactive = true,
 }: {
   outfit: Outfit;
@@ -139,6 +148,7 @@ export default function Avatar({
   angle?: number;
   zoom?: number;
   onItem?: (id: string | null) => void;
+  onSelectItem?: (id: string) => void;
   interactive?: boolean;
 }) {
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -148,7 +158,9 @@ export default function Avatar({
   }, []);
   const fallback = (
     <div className="avatar-fallback">
-      <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} />
+      <div style={{ transform: `scale(${zoom})` }}>
+        <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />
+      </div>
       <span>Illustrated preview · 3D unavailable</span>
     </div>
   );
@@ -162,7 +174,7 @@ export default function Avatar({
         shadows
         dpr={[1, 1.5]}
         camera={{ position: [0, 1, 5.7], fov: 36 }}
-        aria-label="Interactive 3D fashion mannequin. Drag to rotate."
+        aria-label="Interactive 3D fashion mannequin. Drag to rotate. Click a garment for details."
       >
         <color attach="background" args={["#deded4"]} />
         <ambientLight intensity={1.7} />
@@ -170,7 +182,7 @@ export default function Avatar({
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={null}>
           <group rotation={[0, angle, 0]} scale={zoom}>
-            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} />
+            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />
           </group>
           <ContactShadows
             position={[0, -1.49, 0]}
