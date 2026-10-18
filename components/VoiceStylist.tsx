@@ -50,10 +50,10 @@ function VoiceControls({ consult, disabled }: Props) {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Voice is unavailable.");
       if (attempt !== generation.current) return;
-      voice.setMuted(false);
       setTranscript([]);
       await voice.startSession({ conversationToken: body.token, connectionType: "webrtc" });
       if (attempt !== generation.current) await voice.endSession();
+      else voice.setMuted(false);
     } catch (cause) {
       if (mounted.current && attempt === generation.current) setError(cause instanceof Error && cause.name === "NotAllowedError" ? "Microphone permission was denied. Allow it in browser settings to talk, or keep typing." : cause instanceof Error ? cause.message : "Voice could not start.");
     } finally {
