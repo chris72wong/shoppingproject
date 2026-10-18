@@ -5,3 +5,15 @@ out/
 .env*
 !.env.example
 test-results/
+__pycache__/
+*.pyc
+native/FormCapture/*.xcodeproj/
+native/FormCapture/Info.plist
+native/FormCapture/DerivedData/
+*.blend
+*.blend1
+*.ply
+*.glb
+*.f32
+*.u8
+pilot-data/

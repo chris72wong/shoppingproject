@@ -6,6 +6,7 @@ import { Category, Outfit, Product, ScanProfile } from "@/lib/types";
 import { product } from "@/lib/catalog";
 import { Vector2 } from "three";
 import { FlatAvatar } from "./FlatAvatar";
+import BodyMesh, { type BodyPreview } from "./BodyMesh";
 function Mannequin({
   outfit,
   profile,
@@ -141,6 +142,7 @@ export default function Avatar({
   onItem,
   onSelectItem,
   interactive = true,
+  bodyPreview,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
@@ -150,8 +152,11 @@ export default function Avatar({
   onItem?: (id: string | null) => void;
   onSelectItem?: (id: string) => void;
   interactive?: boolean;
+  bodyPreview?: BodyPreview;
 }) {
   const [supported, setSupported] = useState<boolean | null>(null);
+  const [meshError, setMeshError] = useState("");
+  useEffect(() => setMeshError(""), [bodyPreview?.url]);
   useEffect(() => {
     const c = document.createElement("canvas");
     setSupported(!!(c.getContext("webgl2") || c.getContext("webgl")));
@@ -167,6 +172,7 @@ export default function Avatar({
   if (supported === null)
     return <div className="avatar-loading">Preparing your studio…</div>;
   if (!supported) return fallback;
+  if (meshError) return <div className="avatar-fallback" role="alert">{meshError}</div>;
   return (
     <Boundary fallback={fallback}>
       <Canvas
@@ -174,7 +180,7 @@ export default function Avatar({
         shadows
         dpr={[1, 1.5]}
         camera={{ position: [0, 1, 5.7], fov: 36 }}
-        aria-label="Interactive 3D fashion mannequin. Drag to rotate. Click a garment for details."
+        aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : "Interactive 3D fashion mannequin. Drag to rotate. Click a garment for details."}
       >
         <color attach="background" args={["#deded4"]} />
         <ambientLight intensity={1.7} />
@@ -182,7 +188,7 @@ export default function Avatar({
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={null}>
           <group rotation={[0, angle, 0]} scale={zoom}>
-            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />
+            {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onError={setMeshError} /> : <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />}
           </group>
           <ContactShadows
             position={[0, -1.49, 0]}
