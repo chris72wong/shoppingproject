@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, RefreshCw, ShoppingBag, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, RefreshCw, X } from "lucide-react";
 import { product } from "@/lib/catalog";
 import { total } from "@/lib/agent";
 import { similarItems } from "@/lib/swaps";
@@ -23,9 +23,6 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
   const [selected, setSelected] = useState<string | null>(null);
   const [inspectionId, setInspectionId] = useState<string | null>(null);
   const [swapNotice, setSwapNotice] = useState("");
-  const [bulkNotice, setBulkNotice] = useState("");
-  const shopDialog = useRef<HTMLDialogElement>(null);
-  const shopButton = useRef<HTMLButtonElement>(null);
   const piece = pieces.find(p => p.id === selected);
   const info = piece ? getProductInfo(piece) : null;
   const cost = total(outfit, extra);
@@ -46,26 +43,15 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
     onSwap(piece.id, replacement); setInspectionId(null); setSelected(replacement.id);
     setSwapNotice(`Selected ${replacement.name}. Other pieces are unchanged.`);
   }
-  function openAll() {
-    const urls = [...new Set(pieces.map(p => getProductInfo(p).href).filter((url): url is string => {
-      if (!url) return false;
-      try { const parsed = new URL(url); return parsed.protocol === "https:" && !parsed.username && !parsed.password; } catch { return false; }
-    }))];
-    urls.forEach(url => window.open(url, "_blank", "noopener,noreferrer"));
-    setBulkNotice("If your browser blocks extra tabs, use the individual product links below.");
-  }
   return <section className="outfit-studio" aria-label="Outfit studio">
     <div className="studio-toolbar">
-      <div className="look-title"><span className="outfit-eyebrow">THE PERSONAL STYLE STUDIO</span><h1>{outfit.name}</h1></div>
       <div className="model-switch"><span>Switch model</span><div role="group" aria-label="Switch model">{(["model-1", "model-2"] as const).map((id, i) => <button key={id} aria-pressed={modelId === id} onClick={() => onModelChange(id)}>Model {i + 1}</button>)}</div></div>
     </div>
     <div className="mirra-studio-grid">
       <div className="look-overview">
-        <span className="look-number">0{index + 1}<small> / 0{outfits.length}</small></span>
         <p className="look-rationale">{/pattern|dimensions|unvalidated|draft/i.test(outfit.rationale || outfit.description) ? "A considered palette, simple layers, and pieces that work together. Make this look your own." : outfit.rationale || outfit.description}</p>
         <div className="look-tags">{outfit.tags.filter(t => !/draft|capsule/i.test(t)).slice(0, 3).map(tag => <span key={tag}>{tag}</span>)}</div>
         <div className="look-price"><strong>${cost.toFixed(2)}</strong><span>USD · estimated total</span></div>
-        <button className="shop-outfit-button" ref={shopButton} onClick={() => { setBulkNotice(""); shopDialog.current?.showModal(); }}><ShoppingBag size={16} />View entire researched outfit<ArrowUpRight size={15} /></button>
       </div>
       <div className="studio-stage">
         <div className="stage-halo" aria-hidden="true" />
@@ -89,11 +75,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
         {onToggleOuter && pieces.every(p => previewManifest.products.some(product => product.productId === p.id)) && <button className="layer-toggle" disabled={disabled || outfit.lockedCategories?.includes("outerwear") || outfit.items.some(item => item.owned && product(item.productId, extra).category === "outerwear")} onClick={() => { setInspectionId(null); onToggleOuter(); }}>{pieces.some(p => p.category === "outerwear") ? "− Remove overshirt" : "+ Add blue overshirt"}</button>}
       </div>
     </div>
-    <div className="studio-bottom-bar"><div className="look-pagination" aria-label="Select outfit">{outfits.map((o, i) => <button key={`${o.id}-${i}`} disabled={disabled} aria-label={`Show look ${i + 1}`} aria-pressed={i === index} onClick={() => navigate(i)}><span />Look {i + 1}</button>)}</div><button className="new-look-button" disabled={disabled || previewManifest.status === "blocked"} onClick={() => onFeedback(`Create three new casual outfits under $${budget}.`)}><RefreshCw size={13} />New looks</button></div>
+    <div className="studio-bottom-bar"><div className="look-pagination" aria-label="Select outfit">{outfits.map((o, i) => <button key={`${o.id}-${i}`} disabled={disabled} aria-label={`Show look ${i + 1}`} aria-pressed={i === index} onClick={() => navigate(i)}><span /></button>)}</div><button className="new-look-button" disabled={disabled || previewManifest.status === "blocked"} onClick={() => onFeedback(`Create three new casual outfits under $${budget}.`)}><RefreshCw size={13} />New looks</button></div>
     <p className="swap-notice sr-only" role="status">{swapNotice}</p>
-    <dialog className="outfit-shop-dialog" ref={shopDialog} onClick={event => { if (event.target === event.currentTarget) shopDialog.current?.close(); }} onClose={() => shopButton.current?.focus()} aria-labelledby="outfit-shop-title"><div className="outfit-shop-content"><button className="shop-close" aria-label="Close outfit products" onClick={() => shopDialog.current?.close()}><X size={22} /></button><span className="outfit-eyebrow">YOUR LOOK, PIECE BY PIECE</span><h2 id="outfit-shop-title">{outfit.name}</h2><p className="shop-price">${cost.toFixed(2)} USD · estimated total</p><div className="shop-product-list">{pieces.map(item => {
-      const details = getProductInfo(item);
-      return <article key={item.id}><img src={item.image} alt={item.name} /><div><span>{item.brand}</span><h3>{item.name}</h3><p>{item.color} · ${item.price.toFixed(2)} USD estimated</p>{details.href ? <a href={details.href} target="_blank" rel="noopener noreferrer">View researched product <ArrowUpRight size={14} /></a> : <p>Product link unavailable</p>}</div></article>;
-    })}</div><button className="shop-open-all" onClick={openAll}>Open all product pages <ArrowUpRight size={16} /></button><p className="shop-note" role="status">{bulkNotice || "Confirm current prices and availability with the retailer."}</p></div></dialog>
   </section>;
 }

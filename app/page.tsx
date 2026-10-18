@@ -316,7 +316,6 @@ export default function App() {
     <div className="chat-app">
       <header className="mirra-header">
         <a href="/" className="mirra-wordmark" aria-label="Mirra home">mirra<span>✳</span></a>
-        <span className="mirra-tagline">A little more you.</span>
         <div className="stylist-mode" role="group" aria-label="Stylist mode">
           <button disabled={busy} aria-pressed={mode === "sample"} onClick={() => { setMode("sample"); setError(""); }}>Sample</button>
           <button disabled={busy} aria-pressed={mode === "live"} onClick={() => { setMode("live"); setError(""); }}>Live AI</button>

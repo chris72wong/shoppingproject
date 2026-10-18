@@ -69,12 +69,12 @@ export default function Avatar({
   modelId?: AvatarModelId;
 }) {
   const container = useRef<HTMLDivElement>(null), elapsed = useRef(0);
-  const [paused, setPaused] = useState(false), [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(true);
   const [foreground, setForeground] = useState(true);
   const [reduced, setReduced] = useState(true), [reset, setReset] = useState(0);
   const ids = previewProductIds ?? outfit.items.map(item => item.productId);
   const combination = sampleCombination(ids);
-  const active = interactive && !bodyPreview && visible && foreground && !paused && !reduced;
+  const active = interactive && !bodyPreview && visible && foreground && !reduced;
   const [loading, setLoading] = useState(false);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [meshError, setMeshError] = useState("");
@@ -144,7 +144,6 @@ export default function Avatar({
         />
       </Canvas>
       {interactive && <div className="human-controls">
-        {!bodyPreview && <button type="button" disabled={reduced} aria-pressed={!paused && !reduced} onClick={() => setPaused(value => !value)}>{reduced ? "Reduced motion" : paused ? "Play" : "Pause"}</button>}
         <button type="button" onClick={() => setReset(value => value + 1)}>Reset view</button>
       </div>}
       {!bodyPreview && (garmentError || !combination) && <p className="human-preview-status" role="status">{garmentError ? "This preview could not load. Choose another model or outfit, or refresh to retry." : "This saved outfit has no matching preview. Choose a current look."}</p>}
