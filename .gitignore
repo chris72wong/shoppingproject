@@ -17,3 +17,6 @@ native/FormCapture/DerivedData/
 *.f32
 *.u8
 pilot-data/
+
+.avatar-source/
+!public/models/avatar.glb

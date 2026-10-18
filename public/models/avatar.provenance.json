@@ -1,0 +1,32 @@
+{
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01",
+  "license": "MIT",
+  "sourceFbxSha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
+  "textureSha256": {
+    "m002_body_color.tga": "6a048a6b2140a1f5293798ca286be64fd0de6d79572e1273ff5765bd578f463f",
+    "m002_head_color.tga": "f5b64e4894930d438f7c419c3c9d0bba1f95fa4de9af078b762ea55bfca1ab85",
+    "m002_opacity_color.tga": "53818d3f45519451edd2bc60d6e59cd4057ecd381827463c5503da0439d0a5cf"
+  },
+  "outputSha256": "d80fd182c96df88d3f17d541c64a8b473e79922cfe1c00f284c71699e71872a6",
+  "bytes": 1995236,
+  "triangles": 7440,
+  "skins": [
+    {
+      "joints": 80
+    }
+  ],
+  "textures": 3,
+  "heightMeters": 1.75,
+  "sourceBounds": {
+    "min": [
+      -0.6741140527864735,
+      -0.0009263058311318867,
+      -0.1438125142808689
+    ],
+    "max": [
+      0.6741140943239058,
+      1.8227523715762037,
+      0.1959711744246496
+    ]
+  }
+}

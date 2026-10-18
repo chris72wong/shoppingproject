@@ -147,7 +147,7 @@ export default function OutfitDetail({
                 </button>
               ))}
             </div>
-            <p className="outfit-data-note">Illustrative mannequin using profile proportions. LiDAR scan import and garment simulation are not connected yet.</p>
+            <p className="outfit-data-note">Microsoft Rocketbox sample human with original clothing. Shopping garments are illustrated separately; body matching and garment fitting are not connected.</p>
           </div>
           <div className="outfit-detail-copy">
             <section className="outfit-reason">

@@ -24,6 +24,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
   const [selected, setSelected] = useState<string | null>(null);
   const [swapNotice, setSwapNotice] = useState("");
   const [pinned, setPinned] = useState(false);
+  const [illustrated, setIllustrated] = useState(false);
   const [zoom, setZoom] = useState(1);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -53,7 +54,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
   function replaceItem(replacement: Product) {
     if (!piece || disabled) return;
     onSwap(piece.id, replacement);
-    setSwapNotice(`Equipped ${replacement.name}. Your other pieces are unchanged.`);
+    setSwapNotice(`Selected ${replacement.name}. Your other pieces are unchanged.`);
     selectItem(replacement.id);
   }
   return (
@@ -62,11 +63,15 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
       <div className="studio-toolbar">
         <div><h1>{outfit.name}</h1><p>Look {index + 1} of {outfits.length} · Select a piece to explore alternatives</p></div>
       </div>
+      <div className="avatar-item-controls" aria-label="Preview mode">
+        <button aria-pressed={!illustrated} onClick={() => setIllustrated(false)}>{bodyPreview ? "Body scan" : "3D human"}</button>
+        <button aria-pressed={illustrated} onClick={() => setIllustrated(true)}>Outfit illustration</button>
+      </div>
       <div className="studio-preview-layout">
       <div className="studio-stage">
         <button className="studio-arrow studio-previous" disabled={disabled || outfits.length < 2} onClick={() => navigate(index - 1)} aria-label="Previous outfit"><ArrowLeft size={20} /></button>
         <div className="studio-avatar">
-          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} onSelectItem={selectItem} zoom={zoom} bodyPreview={bodyPreview} />
+          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} onSelectItem={selectItem} zoom={zoom} bodyPreview={bodyPreview} illustrated={illustrated} />
         </div>
         <button className="studio-arrow studio-next" disabled={disabled || outfits.length < 2} onClick={() => navigate(index + 1)} aria-label="Next outfit"><ArrowRight size={20} /></button>
       </div>
@@ -74,7 +79,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
         {piece && info && (
           <aside className="studio-item-card" aria-label="Clothing item details" onMouseEnter={() => inspect(piece.id)} onMouseLeave={() => inspect(null)} onFocusCapture={() => { if (timer.current) clearTimeout(timer.current); }} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) inspect(null); }} onKeyDown={(event) => { if (event.key === "Escape") { setPinned(false); setSelected(null); } }}>
             <button className="studio-card-close" aria-label="Close item details" onClick={() => { setSelected(null); setPinned(false); }}><X size={15} /></button>
-            <span className="outfit-eyebrow">{bodyPreview ? "ILLUSTRATED SHOPPING OUTFIT" : "ON YOUR AVATAR"}</span>
+            <span className="outfit-eyebrow">ILLUSTRATED SHOPPING OUTFIT</span>
             <img className="studio-worn-image" src={piece.image} alt={piece.name} />
             <h3>{piece.name}</h3>
             <p>{piece.brand} · {piece.color}</p>
@@ -98,8 +103,9 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
         <button aria-label="Zoom in" disabled={zoom >= 1.75} onClick={() => setZoom((value) => Math.min(1.75, +(value + 0.25).toFixed(2)))}><ZoomIn size={16} /></button>
       </div>
       <div className="avatar-item-controls" aria-label="Inspect a clothing item">
-        {pieces.map((item) => <button key={item.id} aria-pressed={selected === item.id && pinned} onClick={() => selectItem(item.id)}>{bodyPreview ? item.name : item.category}</button>)}
+        {pieces.map((item) => <button key={item.id} aria-pressed={selected === item.id && pinned} onClick={() => selectItem(item.id)}>{item.name}</button>)}
       </div>
+      {!bodyPreview && <p className="outfit-caption">Sample human · original clothing. Select Outfit illustration to preview your choices; garment fitting is not connected.</p>}
       {bodyPreview && <p className="outfit-caption">{bodyPreview.simulated ? "Pilot garments · separate from shopping outfit" : "Body scan · shopping clothes unavailable"}</p>}
       <p className="swap-notice" role="status">{swapNotice}</p>
       <div className="studio-feedback" aria-label="Give your stylist feedback">
