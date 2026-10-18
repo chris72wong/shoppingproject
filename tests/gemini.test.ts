@@ -97,6 +97,28 @@ test("handles missing credentials, rate limits, network errors and invalid model
   await assert.rejects(chatWithGemini(request(), { apiKey: "secret", fetcher: async () => Response.json({ status: "completed", steps: [] }) }), /invalid reply/);
 });
 
+test("retries a temporary capacity failure once within the same deadline", async () => {
+  let calls = 0;
+  let deadline: AbortSignal | null | undefined;
+  const result = await chatWithGemini(request(), { apiKey: "secret", fetcher: async (_url, init) => {
+    calls++;
+    if (calls === 1) { deadline = init?.signal; return new Response("capacity", { status: 503 }); }
+    assert.equal(init?.signal, deadline);
+    return apiResponse(plan());
+  } });
+  assert.equal(calls, 2);
+  assert.equal(result.outfits?.length, 3);
+});
+
+test("persistent capacity failures stop after two attempts without exposing provider details", async () => {
+  let calls = 0;
+  await assert.rejects(chatWithGemini(request(), { apiKey: "secret", fetcher: async () => {
+    calls++;
+    return new Response("private provider details", { status: 503 });
+  } }), (error: unknown) => error instanceof ChatError && !error.message.includes("private provider details"));
+  assert.equal(calls, 2);
+});
+
 test("validates request size, JSON, origin and message limits before any upstream call", async () => {
   const post = (body: string, origin?: string) => POST(new Request("http://localhost/api/chat", {
     method: "POST", body, headers: origin ? { origin } : {},

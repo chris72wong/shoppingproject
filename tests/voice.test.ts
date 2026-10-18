@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { POST } from "../app/api/voice/token/route";
+import { stylistToolIssues } from "../lib/voice-config";
+
+test("hosted voice tool must wait long enough for Gemini's shopping result", () => {
+  const tool = { type: "client", name: "consult_stylist", expects_response: false, response_timeout_secs: 20,
+    parameters: { required: ["message"], properties: { message: { type: "string" } } } };
+  assert.equal(stylistToolIssues(tool).length, 2);
+  assert.deepEqual(stylistToolIssues({ ...tool, expects_response: true, response_timeout_secs: 60 }), []);
+  assert.ok(stylistToolIssues({ ...tool, type: "webhook" }).some(issue => issue.includes("client tool")));
+  assert.ok(stylistToolIssues({ ...tool, parameters: {} }).some(issue => issue.includes("required string")));
+});
 const request = (origin = "http://localhost:3001") => new Request("http://localhost:3001/api/voice/token", { method: "POST", headers: { origin, host: "localhost:3001" } });
 test("voice token boundary and provider errors", async () => {
   const originalFetch = globalThis.fetch;

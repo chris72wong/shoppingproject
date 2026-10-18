@@ -9,16 +9,37 @@
 
 The app sends listening and brevity guidance with each connected session using the SDK’s contextual update. Apply the prompt and first-message settings above in the hosted agent too, since the greeting is controlled by ElevenLabs. Disable automatic silence nudges and choose a patient turn-taking setting in the dashboard so pauses leave room for the user.
 
-5. Add a **client tool** named exactly `consult_stylist`. Description: “Consult the shopping assistant and update displayed outfits using current app state.” Add one required string parameter `message`, described as “The user’s complete shopping request, including outfit number and constraints; at most 2000 characters.” Enable **Wait for response / blocking**. Do not configure a webhook for this tool.
+5. Add a **client tool** named exactly `consult_stylist`. Description: “Consult the shopping assistant and update displayed outfits using current app state.” Add one required string parameter `message`, described as “The user’s complete shopping request, including outfit number and constraints; at most 2000 characters.” Enable **Wait for response / blocking** (`expects_response: true`) and set **Response timeout** to **60 seconds** or more. The browser shopping request can take 55 seconds, including up to 45 seconds for Gemini, so the default 20-second tool timeout is too short. Do not configure a webhook for this tool.
 6. Put these server variables in this worktree’s ignored `.env.local` and deployment environment:
 
 ```dotenv
 GEMINI_API_KEY=your-existing-gemini-key
+GEMINI_MODEL=gemini-flash-latest
 ELEVENLABS_API_KEY=your-elevenlabs-key
 ELEVENLABS_AGENT_ID=your-agent-id
 ```
 
 Use a restricted API key with permission to obtain agent conversation tokens. Never use NEXT_PUBLIC_ for ElevenLabs variables. Restart the server after changing environment variables. Worktrees do not copy the original checkout’s .env.local.
+
+The connection is: ElevenLabs recognizes speech and calls `consult_stylist` in the browser; that tool uses the same shopping handler as typed chat to call `/api/chat`; Gemini returns a validated outfit plan; the app updates the cards and returns the result to ElevenLabs to speak. Merely selecting Gemini as the hosted voice agent's LLM does not connect it to the app's outfits or state.
+
+Check the hosted configuration before a call:
+
+```sh
+npm run voice:check
+```
+
+This reads the agent settings and checks the exact client tool name, required message parameter, blocking response, timeout, and prompt reference. It requires agent read permission. To repair an existing registered client tool's blocking and timeout settings, run `npm run voice:configure` with agent/tool read and tool write permission. This preserves the rest of the tool configuration and verifies the saved agent settings afterward. Existing calls must be ended and restarted to use hosted setting changes.
+
+To make a real Gemini request through the same `/api/chat` route and confirm three validated new outfits are returned:
+
+```sh
+npm run voice:smoke
+```
+
+This uses provider quota, prints no credentials, and does not open a microphone session. A full live call still needs browser microphone access. If the selected Gemini model returns HTTP 503, check provider capacity and `GEMINI_MODEL`; `gemini-flash-latest` is the default alias. The server retries HTTP 503 once within the same 45-second Gemini deadline. HTTP 429 is surfaced without automatic retries; check the Google project's rate limits and quota before retrying. The app does not silently substitute demo outfits for a failed generation. `voice:check` checks configuration only; `voice:smoke` also verifies actual generation.
+
+Provider references: [ElevenLabs client tools and blocking responses](https://elevenlabs.io/docs/eleven-agents/libraries/react#client-tools), [tool configuration API](https://elevenlabs.io/docs/eleven-agents/api-reference/tools/update), and [Gemini Interactions API](https://ai.google.dev/api/interactions-api).
 
 Run on a separate port while other features are open:
 

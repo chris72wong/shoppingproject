@@ -24,7 +24,7 @@ npm start
 
 ## Gemini setup
 
-Copy `.env.example` to `.env.local`, then set `GEMINI_API_KEY` to a key from [Google AI Studio](https://aistudio.google.com/apikey). Restart the development server after changing it. The default model is `gemini-3.8-flash`; override `GEMINI_MODEL` if your project needs another compatible model. The key stays on the server and must never use a `NEXT_PUBLIC_` prefix. No database is required. Gemini usage is subject to your Google project's quota and billing.
+Copy `.env.example` to `.env.local`, then set `GEMINI_API_KEY` to a key from [Google AI Studio](https://aistudio.google.com/apikey). Restart the development server after changing it. The default model is `gemini-flash-latest`; override `GEMINI_MODEL` if your project needs another compatible model. The key stays on the server and must never use a `NEXT_PUBLIC_` prefix. No database is required. Gemini usage is subject to your Google project's quota and billing.
 
 The chat calls the [Gemini Interactions API](https://ai.google.dev/gemini-api/docs/get-started?lang=javascript) through `POST /api/chat`. It includes the latest 24 transcript messages, the current style profile, selected outfits, wardrobe IDs, and catalog text metadata. Body scans, inspiration images, and product image data are excluded. Requests use `store: false` to disable Interactions conversation storage; Google's other applicable data handling terms still apply. Your browser retains the transcript locally.
 

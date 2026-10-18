@@ -97,12 +97,15 @@ export async function chatWithGemini(input: ChatRequest, options: {
     throw new ChatError("An outfit contains an unavailable piece. Start a new chat.", 400);
   let response: Response;
   try {
-    response = await (options.fetcher ?? fetch)("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    // One deadline covers both attempts, keeping the blocking voice tool within
+    // its response window even when Gemini briefly returns a capacity error.
+    const signal = AbortSignal.any([AbortSignal.timeout(45000), ...(options.signal ? [options.signal] : [])]);
+    const init: RequestInit = {
       method: "POST", cache: "no-store",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      signal: AbortSignal.any([AbortSignal.timeout(45000), ...(options.signal ? [options.signal] : [])]),
+      signal,
       body: JSON.stringify({
-        model: options.model ?? process.env.GEMINI_MODEL ?? "gemini-3.8-flash",
+        model: options.model ?? process.env.GEMINI_MODEL ?? "gemini-flash-latest",
         store: false,
         system_instruction: instructions,
         input: JSON.stringify({
@@ -114,7 +117,16 @@ export async function chatWithGemini(input: ChatRequest, options: {
         response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(stylistPlanSchema) },
         generation_config: { max_output_tokens: 6000 },
       }),
-    });
+    };
+    const fetcher = options.fetcher ?? fetch;
+    const url = "https://generativelanguage.googleapis.com/v1beta/interactions";
+    response = await fetcher(url, init);
+    if (response.status === 503) {
+      await response.body?.cancel();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      signal.throwIfAborted();
+      response = await fetcher(url, init);
+    }
   } catch {
     throw new ChatError("Gemini could not be reached or took too long. Your outfits are unchanged. Please try again.", 504);
   }
