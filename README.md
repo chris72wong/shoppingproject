@@ -80,3 +80,5 @@ Tests cover styling and budget arithmetic, conversational outfit targeting and r
 ## Live voice stylist
 
 ElevenAgents voice controls share the Gemini shopping flow and outfit updates. See [voice setup](docs/voice-setup.md) for agent configuration, environment variables, trial verification, and live-call checks.
+
+Local worktrees: running npm run dev initializes a missing .env.local from the primary Git checkout when that file exists there. Existing worktree settings are never overwritten. This file stays ignored and is never committed; production deployments must configure their own environment variables.
