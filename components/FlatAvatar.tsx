@@ -4,10 +4,12 @@ export function FlatAvatar({
   outfit,
   extra = [],
   onItem,
+  onSelectItem,
 }: {
   outfit: Outfit;
   extra?: Product[];
   onItem?: (id: string | null) => void;
+  onSelectItem?: (id: string) => void;
 }) {
   return (
     <div className="flat-avatar" aria-label="Illustrated outfit preview">
@@ -36,6 +38,17 @@ export function FlatAvatar({
           <img
             onMouseEnter={() => onItem?.(i.productId)}
             onMouseLeave={() => onItem?.(null)}
+            onClick={() => onSelectItem?.(i.productId)}
+            role={onSelectItem ? "button" : undefined}
+            tabIndex={onSelectItem ? 0 : undefined}
+            onFocus={() => onItem?.(i.productId)}
+            onBlur={() => onItem?.(null)}
+            onKeyDown={(event) => {
+              if (onSelectItem && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                onSelectItem(i.productId);
+              }
+            }}
             key={i.productId}
             className={"flat-" + product(i.productId, extra).category}
             src={product(i.productId, extra).image}

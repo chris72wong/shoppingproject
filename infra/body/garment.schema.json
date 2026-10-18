@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Operator-authored pilot garment",
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "productId", "name", "category", "evidence", "sizes"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "format": "uuid" },
+    "version": { "type": "integer", "minimum": 1 },
+    "productId": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "category": { "enum": ["top", "bottom", "outerwear"] },
+    "evidence": {
+      "type": "object",
+      "required": ["source", "measuredAt", "physicalSample", "validated"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "measuredAt": { "type": "string", "format": "date-time" },
+        "physicalSample": { "type": "string", "minLength": 1 },
+        "validated": { "type": "boolean" }
+      }
+    },
+    "sizes": { "type": "array", "minItems": 3, "maxItems": 3, "items": {
+      "type": "object", "required": ["label", "blendKey", "ranges"],
+      "properties": {
+        "label": { "enum": ["S", "M", "L"] },
+        "blendKey": { "type": "string", "pattern": "^garments/[a-zA-Z0-9_./-]+\\.blend$" },
+        "ranges": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "exclusiveMinimum": 0, "maximum": 2.5 } } }
+      }
+    } }
+  }
+}

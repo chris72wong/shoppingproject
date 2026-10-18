@@ -6,18 +6,21 @@ import { Category, Outfit, Product, ScanProfile } from "@/lib/types";
 import { product } from "@/lib/catalog";
 import { Group, PerspectiveCamera, Vector2 } from "three";
 import { FlatAvatar } from "./FlatAvatar";
+import BodyMesh, { type BodyPreview } from "./BodyMesh";
 function Mannequin({
   outfit,
   profile,
   extra,
   onItem,
   paused,
+  onSelectItem,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
   extra: Product[];
   onItem?: (id: string | null) => void;
   paused: boolean;
+  onSelectItem?: (id: string) => void;
 }) {
   const model = useRef<Group>(null);
   const phase = useRef(0);
@@ -70,24 +73,30 @@ function Mannequin({
       <meshStandardMaterial color={color} roughness={0.85} />
     </mesh>
   );
+  const itemForRegion = (name: string) => {
+    const upper: Category = get("outerwear") ? "outerwear" : "top";
+    const regions: Partial<Record<string, Category>> = {
+      shoe: "shoes", hip: "bottom", leg: "bottom", underlayer: "top",
+      accessory: "accessory", torso: upper, sleeve: upper,
+      ...(get("outerwear") ? { arm: "outerwear" as const } : {}),
+    };
+    const category = regions[name];
+    return category ? get(category)?.id ?? null : null;
+  };
   return (
     <group
       ref={model}
       onPointerMove={(event) => {
         if (!onItem || event.buttons > 0) return;
         event.stopPropagation();
-        const name = event.object.name;
-        const upper: Category = get("outerwear") ? "outerwear" : "top";
-        const regions: Partial<Record<string, Category>> = {
-          shoe: "shoes", hip: "bottom", leg: "bottom", underlayer: "top",
-          accessory: "accessory", torso: upper, sleeve: upper,
-          ...(get("outerwear") ? { arm: "outerwear" as const } : {}),
-        };
-        const category = regions[name];
-        onItem(category ? get(category)?.id ?? null : null);
+        onItem(itemForRegion(event.object.name));
       }}
       onPointerOut={() => onItem?.(null)}
-      onClick={(event) => { event.stopPropagation(); }}
+      onClick={(event) => {
+        event.stopPropagation();
+        const id = itemForRegion(event.object.name) ?? get("top")?.id;
+        if (id && event.delta <= 3) onSelectItem?.(id);
+      }}
       position={[0, -1.6 * profile.height / 175, 0]}
       scale={[profile.chest / 96, profile.height / 175, profile.hip / 98]}
     >
@@ -169,7 +178,9 @@ export default function Avatar({
   angle = 0,
   zoom = 1,
   onItem,
+  onSelectItem,
   interactive = true,
+  bodyPreview,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
@@ -177,7 +188,9 @@ export default function Avatar({
   angle?: number;
   zoom?: number;
   onItem?: (id: string | null) => void;
+  onSelectItem?: (id: string) => void;
   interactive?: boolean;
+  bodyPreview?: BodyPreview;
 }) {
   const [rotating, setRotating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
@@ -189,19 +202,24 @@ export default function Avatar({
     return () => preference.removeEventListener('change', update);
   }, []);
   const [supported, setSupported] = useState<boolean | null>(null);
+  const [meshError, setMeshError] = useState("");
+  useEffect(() => setMeshError(""), [bodyPreview?.url]);
   useEffect(() => {
     const c = document.createElement("canvas");
     setSupported(!!(c.getContext("webgl2") || c.getContext("webgl")));
   }, []);
   const fallback = (
     <div className="avatar-fallback">
-      <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} />
+      <div style={{ transform: `scale(${zoom})` }}>
+        <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />
+      </div>
       <span>Illustrated preview · 3D unavailable</span>
     </div>
   );
   if (supported === null)
     return <div className="avatar-loading">Preparing your studio…</div>;
   if (!supported) return fallback;
+  if (meshError) return <div className="avatar-fallback" role="alert">{meshError}</div>;
   return (
     <Boundary fallback={fallback}>
       <Canvas
@@ -210,7 +228,7 @@ export default function Avatar({
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 6.5], fov: 30 }}
         gl={{ alpha: true }}
-        aria-label="Interactive 3D fashion mannequin. Drag to rotate."
+        aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : "Interactive 3D fashion mannequin. Drag to rotate. Click a garment for details."}
       >
         <FrameAvatar profile={profile} />
         <ambientLight intensity={1.7} />
@@ -218,7 +236,7 @@ export default function Avatar({
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={null}>
           <group rotation={[0, angle, 0]} scale={zoom}>
-            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} paused={rotating || reducedMotion || !interactive} />
+            {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onError={setMeshError} /> : <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} onSelectItem={onSelectItem} paused={rotating || reducedMotion || !interactive} />}
           </group>
           <ContactShadows
             position={[0, -1.51 * profile.height / 175, 0]}

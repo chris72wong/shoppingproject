@@ -17,6 +17,10 @@ export type Store = {
   messages: ConversationMessage[];
   selected: number;
 };
+export function serializeStore(store: Store): string {
+  const { profile, outfits, saved, wardrobe, custom, messages, selected } = store;
+  return JSON.stringify({ profile, outfits, saved, wardrobe, custom, messages, selected, scan: { fit: store.scan.fit } });
+}
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((x) => typeof x === "string");
 const validOutfit = (o: Outfit) =>
@@ -151,7 +155,7 @@ export function restore(raw: string | null, defaults: Store): Store {
       if (!Number.isFinite(s.scan[key])) s.scan[key] = defaults.scan[key];
       s.scan[key] = Math.max(min, Math.min(max, s.scan[key]));
     }
-    s.scan.complete = s.scan.complete === true;
+    s.scan.complete = false; // Legacy flags are not proof of a captured body.
     s.scan.fit = ["Regular", "Oversized", "Fitted"].includes(s.scan.fit)
       ? s.scan.fit
       : "Regular";

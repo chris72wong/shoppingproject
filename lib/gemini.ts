@@ -34,7 +34,9 @@ Use its feelsLike, daily low/high (Celsius), rainChance (percent), precipitation
 to choose actual appropriate layers and footwear. Explain how the choices address these conditions.
 Do not claim forecast data for other dates or places. If weatherError is present, acknowledge that weather
 could not be checked and proceed without inventing conditions. If weather is absent, proceed without weather; device location permission is optional.
-Do not treat the illustrative avatar as a real LiDAR scan or validated garment fit.`;
+Do not treat the illustrative avatar as a real LiDAR scan or validated garment fit.
+The optional fitSummary is computed by the server with separate user consent. Explain only its supplied
+product size recommendations. If withheld or absent, do not infer sizes or claim that simulated drape proves fit.`;
 
 // Rebuild UI outfits from known products. The model cannot invent prices, ownership or URLs.
 export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): ConversationResponse {
@@ -83,6 +85,7 @@ export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): Conve
 export async function chatWithGemini(input: ChatRequest, options: {
   apiKey?: string; model?: string; fetcher?: typeof fetch; signal?: AbortSignal;
   weather?: WeatherContext; weatherError?: string;
+  fitSummary?: import("./body/summary").FitSummary;
 } = {}): Promise<ConversationResponse> {
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey?.trim()) throw new ChatError("Gemini is not configured. Add GEMINI_API_KEY to .env.local and restart the server.", 503);
@@ -105,6 +108,7 @@ export async function chatWithGemini(input: ChatRequest, options: {
         input: JSON.stringify({
           history: input.history, state: input.state, message: input.message,
           weather: options.weather, weatherError: options.weatherError,
+          fitSummary: options.fitSummary,
           catalog: products.map(({ id, name, category, tags, color, price }) => ({ id, name, category, tags, color, price })),
         }),
         response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(stylistPlanSchema) },
