@@ -553,7 +553,7 @@
 .swap-notice { font-size: 12px; text-align: center; color: #5d7045; min-height: 0; margin: 4px 0; }
 .studio-details-slot { max-height: 34dvh; }
 @container (min-width: 960px) {
- .studio-preview-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(300px, 380px); gap: 24px; }
+ .studio-preview-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr); gap: 24px; }
  .studio-details-slot { max-height: 100%; }
 }
 @media (max-width: 650px) {
