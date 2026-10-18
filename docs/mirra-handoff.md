@@ -54,3 +54,9 @@ Final tested commit and remote verification are recorded in the completion messa
 - [ ] Continuation heartbeat: automatic approval rejected creation as a duplicate; no duplicate was created. Implementation proceeded directly and does not need another worker.
 
 Minor close-up neck/material polish and unvalidated physical fit are documented. No further automatic provider testing is needed after delivery.
+
+## Published implementation
+
+Verified origin/master contains implementation commit 1c9c4db197ca00cdf8760adacbeba0e75e81dcbe. Publication used a normal push after checking teammates' master history. GitHub's email-privacy rejection was resolved using the verified GitHub no-reply identity for only the two new commits; privacy protection remains enabled.
+
+Teammates on master can run `git pull --ff-only origin master`, then the startup commands above. Update an existing GEMINI_MODEL override to gemini-3.5-flash-lite for the tested live configuration. The local production preview is http://127.0.0.1:3001; use that exact address to avoid other worktrees' localhost/IPv6 development servers.
