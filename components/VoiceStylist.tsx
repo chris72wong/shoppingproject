@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import "./voice.css";
+const listeningGuidance = "Voice preference: let the user do most of the talking. Respond only when they finish a request or ask a question. Default to one short sentence, ideally under 20 words; give more detail only when asked. Skip small talk, praise, repeated summaries, thinking-aloud, and routine follow-up questions. Ask at most one brief clarification only when necessary to act. After answering, wait quietly for the user; do not fill pauses or prompt them to keep talking. For shopping results, state only the key outcome, not the full tool response or outfit list. Still report failures and essential limitations accurately.";
 type Props = { consult: (message: string) => Promise<string>; disabled: boolean };
 export default function VoiceStylist(props: Props) {
   return <ConversationProvider><VoiceControls {...props} /></ConversationProvider>;
@@ -53,7 +54,10 @@ function VoiceControls({ consult, disabled }: Props) {
       setTranscript([]);
       await voice.startSession({ conversationToken: body.token, connectionType: "webrtc" });
       if (attempt !== generation.current) await voice.endSession();
-      else voice.setMuted(false);
+      else {
+        voice.sendContextualUpdate(listeningGuidance);
+        voice.setMuted(false);
+      }
     } catch (cause) {
       if (mounted.current && attempt === generation.current) setError(cause instanceof Error && cause.name === "NotAllowedError" ? "Microphone permission was denied. Allow it in browser settings to talk, or keep typing." : cause instanceof Error ? cause.message : "Voice could not start.");
     } finally {
