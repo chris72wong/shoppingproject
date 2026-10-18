@@ -16,6 +16,6 @@ export default function BodyReviewViewer({ preview, onPoint, onError }: { previe
   return <ViewerBoundary key={preview.url}><div className="body-review-viewer"><Canvas camera={{ position: [0, 0.25, 3.4], fov: 40 }} frameloop="demand" dpr={[1, 1.5]} aria-label="Personal body scan. Drag to rotate; select a landmark and click its position.">
     <ambientLight intensity={1.8} /><directionalLight position={[2, 4, 3]} intensity={2.5} />
     <BodyMesh preview={preview} centered onPoint={onPoint} onError={onError} />
-    <OrbitControls enablePan={false} minDistance={1.5} maxDistance={6} />
+    <OrbitControls enablePan={false} enableZoom={false} />
   </Canvas></div></ViewerBoundary>;
 }

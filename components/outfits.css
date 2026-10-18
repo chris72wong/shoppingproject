@@ -486,6 +486,10 @@
 .studio-retailer { display: inline-block; font-size: 11px; text-decoration: underline; margin: 6px 0; }
 .studio-item-card .swap-choice { margin-top: 7px; }
 .avatar-item-controls button[aria-pressed="true"] { background: #e1e8d3; border-color: #9eac86; }
+.flat-avatar img[role="button"] { cursor: pointer; }
+.flat-avatar img:focus-visible { outline: 3px solid #829663; outline-offset: 3px; }
+.flat-avatar .flat-layered-top { left: 83px; width: 74px; z-index: 3; }
+.flat-avatar .flat-accessory { top: 135px; left: 170px; width: 60px; height: 80px; z-index: 4; }
 .studio-summary { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 16px; margin: 18px 0; font-size: 13px; }
 .studio-summary small { font-size: 10px; color: var(--muted); margin-left: 4px; }
 .studio-summary button { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #5d7045; }
@@ -522,10 +526,8 @@
 .studio-details-slot:empty { display: none; }
 .studio-worn-image { display: block; width: 100%; height: 120px; object-fit: contain; margin: 12px 0; background: #f1f1e9; border-radius: 8px; }
 .studio-regenerate { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 10px; margin-top: 12px; border: 1px solid #bdcba6; border-radius: 8px; background: #e4ebd5; font-size: 12px; }
-.studio-zoom { display: flex; justify-content: center; align-items: center; gap: 4px; margin: 10px 0; flex-shrink: 0; }
-.studio-zoom button { display: grid; place-items: center; min-width: 36px; height: 34px; padding: 5px 8px; border: 1px solid #d5dacb; border-radius: 8px; background: #fcfbf6; font-size: 11px; }
 .outfit-studio button:focus-visible, .outfit-studio a:focus-visible { outline: 3px solid #829663; outline-offset: 3px; }
-.studio-zoom button:disabled, .studio-regenerate:disabled { opacity: .45; cursor: default; }
+.studio-regenerate:disabled { opacity: .45; cursor: default; }
 @container (min-width: 960px) {
   .studio-preview-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 480px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100%; }
   .studio-preview-layout .studio-stage { grid-column: 2; grid-row: 1; width: 100%; height: 100%; }

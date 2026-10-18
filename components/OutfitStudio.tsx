@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowRight, RefreshCw, X, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw, X } from "lucide-react";
 import { product } from "@/lib/catalog";
 import { total } from "@/lib/agent";
 import { similarItems } from "@/lib/swaps";
@@ -24,8 +24,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
   const [selected, setSelected] = useState<string | null>(null);
   const [swapNotice, setSwapNotice] = useState("");
   const [pinned, setPinned] = useState(false);
-  const [illustrated, setIllustrated] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [illustrated, setIllustrated] = useState(!bodyPreview);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   const pieces = outfit.items.map((item) => product(item.productId, extra));
@@ -37,9 +36,10 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
   ).slice(0, 4) : [];
   function inspect(id: string | null) {
     if (timer.current) clearTimeout(timer.current);
-    if (pinned) return;
-    if (id) setSelected(id);
-    else timer.current = setTimeout(() => setSelected(null), 220);
+    if (id) {
+      if (id !== selected) setPinned(false);
+      setSelected(id);
+    } else if (!pinned) timer.current = setTimeout(() => setSelected(null), 220);
   }
   function navigate(next: number) {
     if (timer.current) clearTimeout(timer.current);
@@ -61,7 +61,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
     <section className="outfit-studio" aria-label="Outfit studio">
       <span className="sr-only" aria-live="polite">Look {index + 1} of {outfits.length}: {outfit.name}</span>
       <div className="studio-toolbar">
-        <div><h1>{outfit.name}</h1><p>Look {index + 1} of {outfits.length} · Select a piece to explore alternatives</p></div>
+        <div><h1>{outfit.name}</h1><p>Look {index + 1} of {outfits.length} · Hover over clothing to see details</p></div>
       </div>
       <div className="avatar-item-controls" aria-label="Preview mode">
         <button aria-pressed={!illustrated} onClick={() => setIllustrated(false)}>{bodyPreview ? "Body scan" : "3D human"}</button>
@@ -71,7 +71,7 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
       <div className="studio-stage">
         <button className="studio-arrow studio-previous" disabled={disabled || outfits.length < 2} onClick={() => navigate(index - 1)} aria-label="Previous outfit"><ArrowLeft size={20} /></button>
         <div className="studio-avatar">
-          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} onSelectItem={selectItem} zoom={zoom} bodyPreview={bodyPreview} illustrated={illustrated} />
+          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} onSelectItem={selectItem} bodyPreview={bodyPreview} illustrated={illustrated} />
         </div>
         <button className="studio-arrow studio-next" disabled={disabled || outfits.length < 2} onClick={() => navigate(index + 1)} aria-label="Next outfit"><ArrowRight size={20} /></button>
       </div>
@@ -97,16 +97,8 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
         )}
       </div>
       </div>
-      <div className="studio-zoom" aria-label="Avatar zoom controls">
-        <button aria-label="Zoom out" disabled={zoom <= 0.75} onClick={() => setZoom((value) => Math.max(0.75, +(value - 0.25).toFixed(2)))}><ZoomOut size={16} /></button>
-        <button aria-label="Reset avatar zoom" onClick={() => setZoom(1)}>{Math.round(zoom * 100)}%</button>
-        <button aria-label="Zoom in" disabled={zoom >= 1.75} onClick={() => setZoom((value) => Math.min(1.75, +(value + 0.25).toFixed(2)))}><ZoomIn size={16} /></button>
-      </div>
-      <div className="avatar-item-controls" aria-label="Inspect a clothing item">
-        {pieces.map((item) => <button key={item.id} aria-pressed={selected === item.id && pinned} onClick={() => selectItem(item.id)}>{item.name}</button>)}
-      </div>
-      {!bodyPreview && <p className="outfit-caption">Sample human · original clothing. Select Outfit illustration to preview your choices; garment fitting is not connected.</p>}
-      {bodyPreview && <p className="outfit-caption">{bodyPreview.simulated ? "Pilot garments · separate from shopping outfit" : "Body scan · shopping clothes unavailable"}</p>}
+      {!illustrated && !bodyPreview && <p className="outfit-caption">Sample human · original clothing. Select Outfit illustration to preview your choices; garment fitting is not connected.</p>}
+      {!illustrated && bodyPreview && <p className="outfit-caption">{bodyPreview.simulated ? "Pilot garments · separate from shopping outfit" : "Body scan · shopping clothes unavailable"}</p>}
       <p className="swap-notice" role="status">{swapNotice}</p>
       <div className="studio-feedback" aria-label="Give your stylist feedback">
         <button disabled={disabled} onClick={() => onFeedback(`I don't like the concept of outfit ${index + 1}, ${outfit.name}. Please regenerate with a different direction.`)}><RefreshCw size={14} />New outfit</button>

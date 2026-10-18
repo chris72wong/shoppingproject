@@ -60,9 +60,10 @@ export default function OutfitDetail({
   const choices = piece ? similarItems(outfit, piece, extra, budget, wardrobe) : [];
   function inspect(id: string | null) {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    if (swapping) return;
-    if (id) setSelected(id);
-    else hoverTimer.current = setTimeout(() => setSelected(null), 250);
+    if (id) {
+      if (id !== selected) setSwapping(false);
+      setSelected(id);
+    } else if (!swapping) hoverTimer.current = setTimeout(() => setSelected(null), 250);
   }
   useEffect(() => () => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }, []);
 
@@ -132,22 +133,13 @@ export default function OutfitDetail({
         <div className="outfit-detail-grid">
           <div className="outfit-detail-visual">
             <div className="outfit-model outfit-model-main" onMouseLeave={() => inspect(null)}>
-              <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} />
+              <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} illustrated
+                onSelectItem={(id) => {
+                  if (hoverTimer.current) clearTimeout(hoverTimer.current);
+                  setSelected(id); setSwapping(true);
+                }} />
             </div>
-            <p className="outfit-caption">Drag to rotate. Hover a garment to see its details.</p>
-            <div className="avatar-item-controls" aria-label="Explore worn pieces">
-              {pieces.map((item) => (
-                <button type="button" key={item.id}
-                  onMouseEnter={() => inspect(item.id)} onMouseLeave={() => inspect(null)}
-                  onFocus={() => inspect(item.id)} onBlur={(event) => {
-                    if (!event.relatedTarget || !(event.relatedTarget as HTMLElement).closest(".outfit-product")) inspect(null);
-                  }}
-                  onClick={() => { setSelected(item.id); setSwapping(!outfit.lockedCategories?.includes(item.category)); }}>
-                  {item.category}
-                </button>
-              ))}
-            </div>
-            <p className="outfit-data-note">Microsoft Rocketbox sample human with original clothing. Shopping garments are illustrated separately; body matching and garment fitting are not connected.</p>
+            <p className="outfit-caption">Hover a garment to see its details. Tap or focus a piece to inspect it.</p>
           </div>
           <div className="outfit-detail-copy">
             <section className="outfit-reason">
@@ -166,6 +158,8 @@ export default function OutfitDetail({
                 aria-label="Selected product details"
                 onMouseEnter={() => inspect(piece.id)}
                 onMouseLeave={() => inspect(null)}
+                onFocusCapture={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); }}
+                onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) inspect(null); }}
               >
                 <span className="outfit-eyebrow">{piece.brand}</span>
                 <h3>{piece.name}</h3>

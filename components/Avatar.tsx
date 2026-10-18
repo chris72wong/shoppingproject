@@ -7,9 +7,9 @@ import { PerspectiveCamera } from "three";
 import DatasetAvatar from "./DatasetAvatar";
 import { FlatAvatar } from "./FlatAvatar";
 import BodyMesh, { type BodyPreview } from "./BodyMesh";
-function Illustration({ outfit, extra, onItem, onSelectItem, zoom, label }: {
+function Illustration({ outfit, extra, onItem, onSelectItem, label }: {
   outfit: Outfit; extra: Product[]; onItem?: (id: string | null) => void;
-  onSelectItem?: (id: string) => void; zoom: number; label: string;
+  onSelectItem?: (id: string) => void; label: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(0.5);
@@ -23,7 +23,7 @@ function Illustration({ outfit, extra, onItem, onSelectItem, zoom, label }: {
     return () => observer.disconnect();
   }, []);
   return <div ref={container} style={{ position: "relative", height: "100%", width: "100%" }}>
-    <div style={{ position: "absolute", left: "50%", top: "45%", transform: `translate(-50%, -50%) scale(${fit * zoom})` }}>
+    <div style={{ position: "absolute", left: "50%", top: "45%", transform: `translate(-50%, -50%) scale(${fit})` }}>
       <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />
     </div>
     <span style={{ position: "absolute", bottom: 0, width: "100%", textAlign: "center", fontSize: 11 }}>{label}</span>
@@ -63,7 +63,6 @@ export default function Avatar({
   outfit,
   extra = [],
   angle = 0,
-  zoom = 1,
   onItem,
   onSelectItem,
   interactive = true,
@@ -74,7 +73,6 @@ export default function Avatar({
   profile: ScanProfile;
   extra?: Product[];
   angle?: number;
-  zoom?: number;
   onItem?: (id: string | null) => void;
   onSelectItem?: (id: string) => void;
   interactive?: boolean;
@@ -89,8 +87,8 @@ export default function Avatar({
     const c = document.createElement("canvas");
     setSupported(!!(c.getContext("webgl2") || c.getContext("webgl")));
   }, []);
-  const fallback = <Illustration outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} zoom={zoom} label="Illustrated preview · 3D unavailable" />;
-  if (illustrated) return <Illustration outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} zoom={zoom} label="Outfit illustration · fit is not simulated" />;
+  const fallback = <Illustration outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} label="Illustrated preview · 3D unavailable" />;
+  if (illustrated) return <Illustration outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} label="Outfit illustration · fit is not simulated" />;
   if (supported === null)
     return <div className="avatar-loading">Preparing your studio…</div>;
   if (!supported) return fallback;
@@ -112,7 +110,7 @@ export default function Avatar({
         <directionalLight position={[3, 6, 4]} intensity={2} castShadow />
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={<LoadingSignal onChange={setLoading} />}>
-          <group rotation={[0, angle, 0]} scale={zoom}>
+          <group rotation={[0, angle, 0]}>
             {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onError={setMeshError} /> : <DatasetAvatar />}
           </group>
           <ContactShadows

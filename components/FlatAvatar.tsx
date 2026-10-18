@@ -14,24 +14,14 @@ export function FlatAvatar({
   return (
     <div className="flat-avatar" aria-label="Illustrated outfit preview">
       <div className="flat-head" />
-      {outfit.items
-        .filter((i) => product(i.productId, extra).category !== "accessory")
+      {[...outfit.items]
         .sort(
           (a, b) =>
-            ["outerwear", "top", "bottom", "shoes"].indexOf(
+            ["outerwear", "top", "bottom", "shoes", "accessory"].indexOf(
               product(a.productId, extra).category,
             ) -
-            ["outerwear", "top", "bottom", "shoes"].indexOf(
+            ["outerwear", "top", "bottom", "shoes", "accessory"].indexOf(
               product(b.productId, extra).category,
-            ),
-        )
-        .filter(
-          (i, n, arr) =>
-            !(
-              product(i.productId, extra).category === "top" &&
-              arr.some(
-                (x) => product(x.productId, extra).category === "outerwear",
-              )
             ),
         )
         .map((i) => (
@@ -50,7 +40,8 @@ export function FlatAvatar({
               }
             }}
             key={i.productId}
-            className={"flat-" + product(i.productId, extra).category}
+            className={"flat-" + product(i.productId, extra).category +
+              (product(i.productId, extra).category === "top" && outfit.items.some((item) => product(item.productId, extra).category === "outerwear") ? " flat-layered-top" : "")}
             src={product(i.productId, extra).image}
             alt={product(i.productId, extra).name}
           />
