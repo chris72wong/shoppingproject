@@ -98,6 +98,7 @@ export async function chatWithGemini(input: ChatRequest, options: {
   capsuleOnly?: boolean;
 } = {}): Promise<ConversationResponse> {
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
+  const model = options.model ?? process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
   if (!apiKey?.trim()) throw new ChatError("Gemini is not configured. Add GEMINI_API_KEY to .env.local and restart the server.", 503);
   const products = [...catalog, ...input.state.custom, ...capsuleProducts];
   if (new Set(products.map((p) => p.id)).size !== products.length)
@@ -115,7 +116,7 @@ export async function chatWithGemini(input: ChatRequest, options: {
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       signal,
       body: JSON.stringify({
-        model: options.model ?? process.env.GEMINI_MODEL ?? "gemini-3.8-flash",
+        model,
         store: false,
         system_instruction: options.capsuleOnly ? instructions.replace("Each outfit needs exactly one top, bottom and shoes; outerwear/accessory are optional.", "Each outfit needs exactly one top and bottom; the chambray outerwear is optional. No shoes or accessories are supported. Generate and refine using only the five supplied capsule catalog IDs. These are product-specific estimated drafts, not validated fit. Never promise personal fit or current inventory.") : instructions,
         input: JSON.stringify({
@@ -125,13 +126,13 @@ export async function chatWithGemini(input: ChatRequest, options: {
           catalog: (options.capsuleOnly ? capsuleProducts : products).map(({ id, name, category, tags, color, price }) => ({ id, name, category, tags, color, price })),
         }),
         response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(stylistPlanSchema) },
-        generation_config: { max_output_tokens: 3000 },
+        generation_config: { thinking_level: "low", max_output_tokens: 3000 },
       }),
     });
     if (response.status !== 429) break;
     const quota = await readQuota(response);
     quotaMessage = quota.message;
-    console.warn("Mirra Gemini quota", { model: options.model ?? process.env.GEMINI_MODEL ?? "gemini-3.8-flash", metrics: quota.metrics, daily: quota.daily, retrySeconds: quota.waitMs === undefined ? undefined : quota.waitMs / 1000 });
+    console.warn("Mirra Gemini quota", { model, metrics: quota.metrics, daily: quota.daily, retrySeconds: quota.waitMs === undefined ? undefined : quota.waitMs / 1000 });
     if (attempt > 0 || !quota.retry) break;
     await new Promise<void>((resolve, reject) => {
       const finish = () => { signal.removeEventListener("abort", abort); resolve(); };
@@ -141,7 +142,8 @@ export async function chatWithGemini(input: ChatRequest, options: {
       if (signal.aborted) abort();
     });
     }
-  } catch {
+  } catch (error) {
+    console.warn("Mirra Gemini request failed", { model, reason: error instanceof Error ? error.name : "UnknownError" });
     throw new ChatError("Gemini could not be reached or took too long. Your outfits are unchanged. Please try again.", 504);
   }
   if (!response.ok) {

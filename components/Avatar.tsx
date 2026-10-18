@@ -3,21 +3,25 @@ import { Component, ReactNode, Suspense, useEffect, useRef, useState } from "rea
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
 import { Outfit, Product, ScanProfile, AvatarModelId } from "@/lib/types";
-import { PerspectiveCamera } from "three";
+import { PerspectiveCamera, Vector3 } from "three";
 import SampleHuman from "./SampleHuman";
 import { previewManifest, sampleCombination } from "@/lib/preview-capsule";
 import BodyMesh, { type BodyPreview } from "./BodyMesh";
 function FrameAvatar({ reset }: { reset: number }) {
   const { camera, size } = useThree();
+  const previousReset = useRef<number | null>(null);
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return;
     const halfFov = camera.fov * Math.PI / 360;
     const height = 3.3;
     const width = 2.5;
     const distance = Math.max(height / 2 / Math.tan(halfFov), width / 2 / Math.tan(halfFov) / (size.width / Math.max(1, size.height))) / 0.94;
-    camera.position.set(0, 0, distance);
+    const resetDirection = previousReset.current === null || previousReset.current !== reset;
+    const direction = resetDirection ? new Vector3(0, 0, 1) : camera.position.clone().normalize();
+    camera.position.copy(direction.multiplyScalar(distance));
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
+    previousReset.current = reset;
   }, [camera, size.width, size.height, reset]);
   return null;
 }

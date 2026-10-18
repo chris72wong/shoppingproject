@@ -1,6 +1,6 @@
 /** Headless evaluation of the actual GLB animation, not just its JSON labels. */
 import { readFile, writeFile } from "node:fs/promises";
-import { AnimationMixer, LoopOnce, Vector3, SkinnedMesh, BufferGeometry, Float32BufferAttribute, Triangle } from "three";
+import { AnimationMixer, LoopOnce, Vector3, Quaternion, SkinnedMesh, BufferGeometry, Float32BufferAttribute, Triangle } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { MeshBVH } from "three-mesh-bvh";
@@ -33,11 +33,17 @@ function ancestor(mesh: import('three').Object3D,prefix:string):string|undefined
 function at(time:number){action.reset().play();mixer.setTime(time);gltf.scene.updateMatrixWorld(true);for(const mesh of meshes)mesh.skeleton.update();}
 function bone(name:string){const found=gltf.scene.getObjectByName(name);if(!found)throw new Error('Missing bone '+name);return found.getWorldPosition(new Vector3());}
 at(0);const feet=['foot_l','foot_r'].map(bone);
+const rigBones=[...new Set(meshes.flatMap(mesh=>mesh.skeleton.bones))];
+const loopStart=rigBones.map(b=>({position:b.getWorldPosition(new Vector3()),rotation:b.getWorldQuaternion(new Quaternion()).normalize()}));
 if (['hand_l','hand_r'].some(name=>bone(name).y>1.10 || Math.abs(bone(name).x)>.34))throw new Error('Hands are not relaxed beside the body');
 const head=bone('head');let maxFootDrift=0,maxHeadMotion=0;
 for(let time=0;time<=12;time+=.25){at(time);maxHeadMotion=Math.max(maxHeadMotion,bone('head').distanceTo(head));for(let i=0;i<2;i++)maxFootDrift=Math.max(maxFootDrift,bone(['foot_l','foot_r'][i]).distanceTo(feet[i]));}
 if(maxFootDrift>.002)throw new Error('Feet drift '+maxFootDrift+' metres');
 if(maxHeadMotion<.003)throw new Error('Idle is not visibly moving');
+at(12);
+const maxLoopPositionErrorM=Math.max(...rigBones.map((b,i)=>b.getWorldPosition(new Vector3()).distanceTo(loopStart[i].position)));
+const maxLoopRotationErrorRad=Math.max(...rigBones.map((b,i)=>b.getWorldQuaternion(new Quaternion()).normalize().angleTo(loopStart[i].rotation)));
+if(maxLoopPositionErrorM>.0001 || maxLoopRotationErrorRad>.0001)throw new Error('The exported skeleton jumps at the loop boundary: '+JSON.stringify({maxLoopPositionErrorM,maxLoopRotationErrorRad}));
 at(2.25);
 let blinkLeft=0,blinkRight=0;
 for(const mesh of meshes){const names=mesh.morphTargetDictionary||{},values=mesh.morphTargetInfluences||[];blinkLeft=Math.max(blinkLeft,values[names.eyeBlinkLeft]||0);blinkRight=Math.max(blinkRight,values[names.eyeBlinkRight]||0);}
@@ -66,7 +72,7 @@ if(process.argv.includes('--collisions')){
     body.dispose();
   }
 }
-const report={asset:path,appearanceMode:process.argv.includes('--skeletal')?'skeletal preview':'baked cloth',durationSeconds:clip.duration,maxFootDriftM:maxFootDrift,maxHeadMotionM:maxHeadMotion,blinkLeft,blinkRight,garmentMeshCount:garmentMeshes.length,
+const report={asset:path,appearanceMode:process.argv.includes('--skeletal')?'skeletal preview':'baked cloth',durationSeconds:clip.duration,maxFootDriftM:maxFootDrift,maxHeadMotionM:maxHeadMotion,maxLoopPositionErrorM,maxLoopRotationErrorRad,blinkLeft,blinkRight,garmentMeshCount:garmentMeshes.length,
   collisionChecksRun:process.argv.includes('--collisions'),minSampledBodyClearanceM:Number.isFinite(minBodyClearance)?minBodyClearance:null,penetratingSamples:process.argv.includes('--collisions')?penetratingSamples:null,collisionsByGarment,collisionStepSeconds:.25,
   limits:'Vertex sampling is a diagnostic, not a proof of complete triangle collision freedom or physical fit.'};
 console.log(JSON.stringify(report,null,2));

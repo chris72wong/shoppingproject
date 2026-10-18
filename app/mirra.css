@@ -108,6 +108,22 @@ body { background:var(--paper); font-size:14px; line-height:1.5; }
 .stage-hint,.stage-model-label,.voice-disclosure,.sample-examples > span,.look-pagination button,.new-look-button { color:#6d795f; }
 .studio-bottom-bar { padding-top:19px; padding-bottom:10px; }
 .stage-hint { bottom:4px; }
+.chat-app .studio-toolbar { padding:0 0 13px; }
+.chat-app .studio-workspace .studio-avatar { inset:0 0 24px; height:auto; }
+@media(min-width:960px) {
+  .chat-app .mirra-studio-grid { grid-template-rows:minmax(0,1fr); }
+  .chat-app .studio-workspace .studio-stage { height:100%; min-height:0; align-self:stretch; }
+  .chat-app .studio-details-slot { max-height:100%; min-height:0; overflow-y:auto; }
+}
+@media(max-height:760px) and (min-width:960px) {
+  .chat-app .studio-toolbar { padding-bottom:8px; }
+  .look-number { font-size:42px; }
+  .look-rationale { font-size:12px; line-height:1.7; margin-top:10px; }
+  .look-tags { margin-top:10px; }
+  .look-price { margin:10px 0; }
+  .look-price strong { font-size:30px; }
+  .shop-outfit-button { padding:10px; }
+}
 @media(min-width:1500px) { .studio-workspace { padding-left:7vw; padding-right:7vw; }.mirra-studio-grid { gap:5vw; }.studio-toolbar h1 { font-size:38px; } }
 @media(max-height:760px) and (min-width:960px) { .mirra-header { height:62px; }.studio-workspace { padding-top:14px; }.studio-toolbar h1 { font-size:27px; }.look-rationale { margin-top:13px; }.look-price { margin:15px 0; }.studio-toolbar { padding-bottom:8px; }.sample-examples { margin-bottom:4px; }.voice-disclosure { display:none; }.voice-stylist { margin-bottom:5px; } }
 @media(max-width:959px) { .chat-app { height:auto; min-height:100dvh; overflow:visible; }.mirra-header { margin:0 22px; height:70px; }.studio-workspace { overflow:visible; padding:20px 22px 0; }.studio-workspace .outfit-studio { flex:none; }.mirra-studio-grid { grid-template-columns:1fr 1fr; min-height:0; gap:20px; }.studio-workspace .studio-stage { grid-column:1/-1; grid-row:1; height:480px; }.look-overview { grid-column:1; grid-row:2; max-width:none; align-self:start; }.studio-details-slot { grid-column:2; grid-row:2; max-height:none; overflow:visible; align-self:start; }.look-number { font-size:38px; }.look-rationale { margin-top:14px; }.studio-workspace .conversation { margin:12px auto 0; }.studio-bottom-bar { margin-top:15px; }.stage-halo { width:70%; left:15%; }.model-switch { flex-direction:column; gap:5px; align-items:flex-end; }.studio-toolbar h1 { font-size:27px; } }

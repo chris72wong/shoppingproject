@@ -1,0 +1,10 @@
+{
+  "transport": "ElevenLabs live text-only WebSocket -> production Gemini endpoint -> agent confirmation",
+  "microphoneAudioVerified": false,
+  "connected": true,
+  "toolCalls": 1,
+  "outfitCount": 3,
+  "confirmation": "Three casual outfits from the capsule are ready, all under $60.",
+  "audioEvents": 0,
+  "verifiedAtUtc": "2026-10-18T10:14:41.225Z"
+}

@@ -59,6 +59,7 @@
     "appearanceApproximation": true,
     "physicalFitValidated": false
   },
-  "visualReviewPassed": false,
-  "physicalFitValidated": false
+  "visualReviewPassed": true,
+  "physicalFitValidated": false,
+  "visualReviewEvidence": "docs/mirra-visual-review.md: all 13 assets, Front/Side/Back, blink/face/hands/garment checks, full-cycle live playback with spaced screenshot samples; physical fit not validated"
 }

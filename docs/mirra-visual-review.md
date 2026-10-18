@@ -1,64 +1,114 @@
 # Mirra independent visual review
 
-Reviewed 2026-10-18 in an independent in-app browser tab at `http://127.0.0.1:3000/review-mirra`, at the existing 1280 × 720 viewport. Actual rendered screenshots were inspected; source validation was not substituted for visual assessment. No application/assets were edited by this reviewer. No Gemini or voice calls were made. Screenshots are present in this reviewer's browser tool transcript; no screenshot files were saved because this reviewer's only authorized output file is this report.
+Reviewed 2026-10-18 in this reviewer's own actual browser tabs at `http://127.0.0.1:3000/review-mirra` and the main app, using the existing 1280 x 720 viewport. No application/assets were edited by this reviewer. No Gemini or voice calls were made. Screenshots are in the browser tool transcript, with six selected final evidence JPEGs saved under `docs/mirra-evidence/` after authorization was extended to evidence files.
 
-## Current disposition
+## Final disposition
 
-**Do not accept the entire asset collection yet.** Exports changed during review. The repaired Model 1 layered asset substantially improves anatomy and drape, but its reviewed revision still has visible garment penetrations. Most assets in the initial batch still showed unacceptable bowed legs and broken layering. Review must follow asset hashes, because the review select indices changed after reexports.
+**No remaining P1/P2 asset defect was visible in the completed coverage below.** Both models now have human proportions, aligned legs, planted shoes, relaxed arms beside the torso, plausible wrists/fingers, visible faces/eyes, and continuous garment silhouettes. The initial bowed-leg, pointed-cuff, torso-layering, sleeve-penetration, hidden-hand, and missing-blink defects were repaired and visually rechecked.
 
-## Prioritized findings
+This is a visual clearance of the inspected views and animation samples, not physical-fit validation. It is also not a claim that every frame of every 12-second clip was watched continuously. Browser tooling supplies still screenshots. Every one of the 26 current assets was played from phase 0 through at least one full 12-second cycle, with start, approximately 6.1-second, and approximately 12.5-second screenshot samples. The asset collection also received the frozen-phase checks below. The implementing agent separately reports an actual AnimationMixer check of all 26 eyelid tracks/endpoints and zero foot drift; that technical evidence supplements these visual observations.
 
-1. **P1 — garment penetrations remain in repaired Model 1 layered look.** Hash `254198bb9bcaf603cf1243505bd98bfc9d2a3f64faddf40290c117bebd32db6d`, product set white tee + navy chinos + blue overshirt (review index 12 after first reexport). Choose Back and Phase 0s, 6s, or 11.95s. A conspicuous white horizontal oval penetrates the blue upper back immediately below the collar. Both inner forearms also show narrow skin strips through the sleeves from Back. Front and lower-back layering are much better than the initial export. Side has a small pointed rear hem flare. These defects were reported to the implementing agent for another repair.
-2. **P1 — initial batch has severely bowed legs and distorted trouser cuffs.** Model 1 initial asset 0 hash `bb0b97bea6ec3f4755470bc29c7a23c24f4c904640aafd865f262a81592a9d7d`, Model 2 initial asset 0 hash `92277d8287bfffe4c979729f7f78b0a561087e83c41caf5449e9f2a4fc5266a3`. Front/Back show both knees pushed far outward, very wide arch-shaped crotch opening, and sharp trouser tabs above sneakers. Reproduced across the initial looks inspected below. The repaired Model 1 hash above resolves the bowed stance and cuff spikes: aligned legs, planted shoes, plausible relaxed hands beside the torso, no A/T pose.
-3. **P1 — initial overshirt template has major layering/hem failures.** Model 1 initial asset 1 hash `dc506e989a5b03f0be80ce2835c2fce6a07ae673833bb8546d07f2d68bc48728`, Phase 6s: white patch through front hem; large white rectangle through lower back. Model 1 initial asset 5 hash `605248b37760e78fcc190d0cc76c5a3b334df08ee66dba1a593c2f2aeba6f1ff`, Front Phase 6s: round black hole at upper abdomen and a vertical black tear from hem, plus black lumbar block. Model 2 initial asset 1 hash `022b9406e58220096bff677139be33223d3a085b506375b4262a19e88303c83c`, Phase 11.95s: overshirt floats above waist; exposed skin/white tee/dark side gaps at waist; white vertical slit through mid-back. Initial Model 1 assets 3/7 and Model 2 asset 3 repeat the same class. These exports should be superseded by corrected hashes.
-4. **P2 — main-app auxiliary text is crowded and faint at 1280 × 720.** On the main studio page, `Drag to discover every angle` sits tightly against the Look 1/2/3 controls beneath the avatar. Small muted captions, including model label and estimated-total text, have weak contrast. Overall composition, serif headings, restrained palette, product cards, and whitespace look refined; avatar defects remain the dominant polish problem.
+## Coverage and evidence
 
-## Coverage actually completed
+- Model 1: all eight outfit combinations and all five individual previews received Front at 0s, Side at 6s, and Back at 11.95s on the structurally final body/garment meshes. Those exports then changed only to restore facial animation; every current hash below was individually rechecked in face close-up at the 2.25s blink peak. All 13 close their eyelids correctly. Representative final overshirt received live playback samples and endpoint comparison.
+- Model 2: all 13 current hashes below received Front at 0s, Side at 6s, Back at 11.95s, and Front face close-up at 2.25s. Every blink closes correctly. Final overshirt look-12 additionally received Back Hands close-up at 6s, Front Garment close-up at 6s, and live playback samples spanning more than 12 seconds. Final layered look-1 also received hand close-ups. Previous skin sliver above the inner cuff is gone.
+- Both models' representative faces were inspected at 0, 2.25, 3, 6, 9, and 11.95s during the repair review. Subtle head/upper-torso motion and closed-eye blink were visible. Final current hashes received the explicit blink checks above. No obvious loop pop, sliding feet, tearing, hollow body, rigid A/T pose, or deformed fingers was observed in the sampled evidence.
+- Main app: inspected at 1280 x 720. Refined serif headings, restrained palette, product cards, and whitespace create a polished overall composition. A compact-height stage/pagination overlap and faint auxiliary text were reported. The implementing agent is addressing that CSS separately after this asset review; this reviewer has not cleared the subsequent CSS revision.
 
-Initial Model 1: all eight combination assets (indices 0–7) and all five individual previews (8–12), Front/Side/Back. Most were inspected frozen at Phase 6s. Initial asset 0 also had Front/Side at Phase 0s, face close-ups at 0/2.25/6s, and initial live playback. Initial asset 12 showed a small exposed skin/waist split beneath the blue shirt, even without a tee.
+The review harness originally could leave a paused phase unapplied and rapid captures could show loading/previous-camera frames. Those captures were excluded from clearance, and the implementing agent repaired phase selection/invalidation and added rendered asset/hash/phase acknowledgment. Final checks used settled rendered states. Hot reloads reset selection during review; interrupted checks were resumed explicitly.
 
-Initial Model 2: combination assets 0–4, Front/Side/Back, frozen at Phase 11.95s (asset 0 earlier static too). Face close-up on asset 0 at all six supplied phases (0, 2.25, 3, 6, 9, 11.95). Model 2 combinations 5–7 and individual previews 8–12 were deliberately deferred when the implementing agent requested avoiding redundant checks on the already rejected batch while repairs were being exported.
+## Remaining low-priority polish
 
-Repaired Model 1 hash `254198…db6d`: Front/Side/Back at 0/6/11.95s; face close-ups at 0 and 11.95s; live playback sampled over more than one 12-second duration. Endpoint face poses are visually close and no obvious jump was seen in these samples. This is **not** a frame-by-frame full-loop clearance for every asset.
+1. **P3: Model 2 neck inset looks striped in close-up.** On blue overshirt + tee combinations (look-1/3/5/7), Front face close-up at 2.25s or 6s shows thin horizontal tee/skin/gray strips at the bottom of the neck opening instead of a clean inset. This is small at the normal studio camera and is not an obvious hole or blocker. Reproduce on Model 2 look-5 hash `01225072942fab901abe3800a643b3bb4b4e9a8521a1c4fe973dfaf91eebd6b1`.
+2. **P3: facial rendering remains somewhat waxy/low-detail.** Faces and eyes are anatomically plausible, but close-up material detail could be improved for realism. This does not block the present prototype quality.
 
-Both sampled faces have recognizable human proportions, intact visible eyes, and a working closed-eye blink at Phase 2.25s. Model 2 ponytail leaves the face visible. Skin/eyes have a somewhat waxy, low-detail appearance but no obvious facial deformation was seen. Subtle head/upper-torso movement is visible between sampled phases. Hands look plausible at full-body scale; there was no dedicated finger close-up control, so detailed finger anatomy is not fully cleared.
+## Resolved defects and regression history
 
-Main app: inspected once at the same viewport without making provider calls or changing its state.
+- Initial Model 1 look-0 `bb0b97bea6ec3f4755470bc29c7a23c24f4c904640aafd865f262a81592a9d7d` and Model 2 look-0 `92277d8287bfffe4c979729f7f78b0a561087e83c41caf5449e9f2a4fc5266a3`: severe outward-bowed knees and pointed trouser tabs. Direct leg alignment fixed stance and cuffs.
+- Initial Model 1 layered look-1 `dc506e989a5b03f0be80ce2835c2fce6a07ae673833bb8546d07f2d68bc48728`: white lower-back block and hem puncture. Initial black layered look-5 `605248b37760e78fcc190d0cc76c5a3b334df08ee66dba1a593c2f2aeba6f1ff`: round black abdomen hole and vertical hem tear. Initial Model 2 layered look-1 `022b9406e58220096bff677139be33223d3a085b506375b4262a19e88303c83c`: floating high hem, white lumbar block and mid-back slit. Replacing the welded/cropped shirt construction and masking hidden layers resolved these.
+- Intermediate Model 1 `254198bb9bcaf603cf1243505bd98bfc9d2a3f64faddf40290c117bebd32db6d`: white rear-collar patch and inner-forearm skin strips. Final representative `173c6520152729b48725fce876d765f454e246be82740cfaab205b60a5c995b3` resolves them.
+- Intermediate Model 2 `4891047d807a19a16db78beeef390fa2b2ecb9e483dfb612d56b64254f57d4ae`: overlong sleeves concealed hands. Shortening cuffs alone (`15e70b95e45144189d40a259bf3fb1cf6e0d0d8d7e6914676ee1b48992b38e8a`) exposed hand/torso-hem intersection. Revised hand clearance (`10ae9a11a4f875de15396b46748e578a872253bb665263a379c729ec7a1530f3`) restored wrists/hands but retained a small cuff skin sliver. Final cuff/body mask removes that sliver.
+- A batch export regression left overshirt variants open-eyed at the supplied blink peak, including Model 1 old look-12 `c1c8d65036cf6b407fa25620bd9d81957c175915bee72198a4ae08c8008cb59b`. The implementing agent independently confirmed that body-mask baking detached the original facial action and failed to restore it. Restoring action/slot/values repaired the export. Every current asset below was visually checked with closed eyelids at 2.25s.
 
-## Required follow-up before acceptance
+## Exact final reviewed hashes
 
-Recheck final repaired hashes for both models: all eight combinations and all five individual previews, Front/Side/Back, facial blink/head motion, and actual full 12-second animation loops. Specifically verify rear collar/forearm coverage and layered waist continuity; then confirm feet remain planted and endpoints do not pop. This report does not claim physical-fit validation.
+Rows use `/models/mirra/<model>/look-<n>.glb`. Look 0-7 are the eight combinations; look 8 white tee, 9 black tee, 10 navy chinos, 11 olive chinos, and 12 blue overshirt are the five individual previews. The static Model 1 clearance carries forward only because the final reexport restored facial tracks without changing its inspected body/garment construction.
 
-## Second representative repair recheck
+| Model | Look | SHA-256 |
+| --- | --- | --- |
+| model-1 | look-0 | e2a77ef13b855625e699cc8790e4fed00d6f470eee4aabad629a4815ec07a1dd |
+| model-1 | look-1 | 173c6520152729b48725fce876d765f454e246be82740cfaab205b60a5c995b3 |
+| model-1 | look-2 | f9408401d52e73f2fff3dafe0921c1369b4e67dfbbf05620b158a1c02d9b1cf0 |
+| model-1 | look-3 | 4f0997fbcb809eab30312247cc50d090cad5a01ce764acf3e8f1ecd2b10ef326 |
+| model-1 | look-4 | da87c406157fbab65e7a95383c17516fe93fd91f089d8cb4afa500174091bd9f |
+| model-1 | look-5 | b4bd8ae14c0aba3a58ad7a356b252251deac16d10db00532ac586144f1010df6 |
+| model-1 | look-6 | 2c5b092cfd8744eceae3a74e5d941b61e89fa792a3f267a9bfc568cfb82e0371 |
+| model-1 | look-7 | 9dcc8e22744e77a64952693bdda06335a72ee84eeb0a30751cde5241afef286b |
+| model-1 | look-8 | 5bdd181f15baa089d03d3ac3ddc5e4b0872524141d2648c677cd6ed49b6d8fc9 |
+| model-1 | look-9 | d74b43d3ff5b62bd3fc8a99d4d5c1302142e78c5d67e9f86212fdf3df10b755b |
+| model-1 | look-10 | b99a9c5ab6bb6bc37efb8a9af552f3473cf73e794b9b871f78007a797dd60505 |
+| model-1 | look-11 | 9b896c6936946bccdc2759258f683f45b8415f47d28cd665c2dc3a495c941c0a |
+| model-1 | look-12 | 0772f97235a8f49ea91ba93d93e151ece4832e27cf2941e592690f31d1e6bef3 |
+| model-2 | look-0 | c33747a32b4ce8b3eaa83d3a85c9fe69f71154c031a06d5055c6a7d55c7f4a4d |
+| model-2 | look-1 | 92656d680032e84067c8c110167cc88855814c0ccdc0254cc915bc91aea8d973 |
+| model-2 | look-2 | 297d4507a37fb13603fed2951bdf833b88ad456955042c52517e86750bf196b3 |
+| model-2 | look-3 | 14745766d46bb13013921fa99dbf4ed378940f5a8f40b2065df309671274a198 |
+| model-2 | look-4 | c7879113ef65d8649cfe1386643877d2657013385c6e3402161c3e0756728bbd |
+| model-2 | look-5 | 01225072942fab901abe3800a643b3bb4b4e9a8521a1c4fe973dfaf91eebd6b1 |
+| model-2 | look-6 | 882a88a69597400178c8631c6dfad9fb21ac7cdc048051423e81c2e7638a27a5 |
+| model-2 | look-7 | a48035bd4fe9203d39d1170966bd89bf82587bd96869613743536cd0dcce3521 |
+| model-2 | look-8 | 6284b44c7677b09885c433925f55b87f06744b7f0983488bc626285641bf98b2 |
+| model-2 | look-9 | a36f6f7c1cb230d242743148429b33d3749e03a4db696ee323f9f66414fab0ab |
+| model-2 | look-10 | d94992ba6fe6c12a3bb553b6ef07714b2b6559a8251b230984b63bd723c9bdd7 |
+| model-2 | look-11 | 02b96b338c6a5cd7514b05cf15fd6abe8c50a0b02229cdede49b8d8f9aef4c65 |
+| model-2 | look-12 | 97484d5b86cfa5292898463f39c2b4c7030e7112c52173d78b56a74f60b49f5a |
 
-Model 1 look-1, hash `173c6520152729b48725fce876d765f454e246be82740cfaab205b60a5c995b3`: inspected Front/Side/Back at Phase 0s; Back at 3s/9s; Front/Side at 2.25s/6s/11.95s. White rear-collar patch and inner-forearm skin slits are resolved. Hem is continuous and a plausible untucked length; slight rear flare reads as fabric. Aligned legs and planted feet remain acceptable. No remaining blocker was visible on this representative. Live playback was started for additional samples. This representative clearance does not automatically clear the unreviewed repaired collection.
 
-Model 2 look-1, hash `4891047d807a19a16db78beeef390fa2b2ecb9e483dfb612d56b64254f57d4ae`: inspected Front/Side/Back at 0s, Back at 6s, and face at all six supplied phases. Stance, back coverage, body continuity, hair/face visibility, and main layering are acceptable in those samples. Blink closes naturally at 2.25s. Two P2 polish issues remain: sleeves cover the wrists and much of the hands (Front shows small fingertips, Side fingers emerge close to cuff), and the front-neck inset has stacked white/skin/gray strips rather than a clean white tee inset. Both were reported. Live playback started for loop samples. No physical-fit claim is made.
+## Completed live playback audit: all 26 current assets
 
-## Final Model 1 batch: static coverage completed
+Each row ran in Front full-body view from acknowledged frozen phase 0, then Play review. Screenshot samples were captured at start, approximately 6.1 seconds, and approximately 12.5 seconds after playback began, across the 12-second boundary. The duration below includes completion of the final screenshot. Model 1 look-9's last screenshot took longer to return; its final sample was requested at 12.546 seconds and completed at 15.546 seconds. No abrupt endpoint change, foot sliding, new interpenetration, hollow body, or pose defect was visible in these samples. The test observes spaced frames across a full real-time cycle, not every intermediate frame.
 
-All 13 final Model 1 assets were inspected in Front at 0s, Side at 6s, and Back at 11.95s. All eight outfits and all five individual previews have aligned legs, intact body, plausible garment drape and no obvious clipping in these views. Model 1 look-1 also received Hands close-up Front/Side/Back: fingers, wrists, and relaxed pose look plausible.
+| Model | Look | Live duration observed (seconds) | Result |
+| --- | --- | --- | --- |
+| model-1 | look-0 | 12.756 | No defect visible in samples |
+| model-1 | look-1 | 12.846 | No defect visible in samples |
+| model-1 | look-2 | 12.835 | No defect visible in samples |
+| model-1 | look-3 | 12.759 | No defect visible in samples |
+| model-1 | look-4 | 12.802 | No defect visible in samples |
+| model-1 | look-5 | 12.793 | No defect visible in samples |
+| model-1 | look-6 | 12.752 | No defect visible in samples |
+| model-1 | look-7 | 12.7 | No defect visible in samples |
+| model-1 | look-8 | 12.687 | No defect visible in samples |
+| model-1 | look-9 | 15.546 | No defect visible in samples |
+| model-1 | look-10 | 12.685 | No defect visible in samples |
+| model-1 | look-11 | 12.725 | No defect visible in samples |
+| model-1 | look-12 | 12.776 | No defect visible in samples |
+| model-2 | look-0 | 12.866 | No defect visible in samples |
+| model-2 | look-1 | 12.832 | No defect visible in samples |
+| model-2 | look-2 | 12.783 | No defect visible in samples |
+| model-2 | look-3 | 12.765 | No defect visible in samples |
+| model-2 | look-4 | 12.757 | No defect visible in samples |
+| model-2 | look-5 | 12.705 | No defect visible in samples |
+| model-2 | look-6 | 12.757 | No defect visible in samples |
+| model-2 | look-7 | 12.801 | No defect visible in samples |
+| model-2 | look-8 | 12.805 | No defect visible in samples |
+| model-2 | look-9 | 12.854 | No defect visible in samples |
+| model-2 | look-10 | 12.832 | No defect visible in samples |
+| model-2 | look-11 | 13.325 | No defect visible in samples |
+| model-2 | look-12 | 12.758 | No defect visible in samples |
 
-**Animation follow-up discovered:** Model 1 look-1 (`10204ff05f10abf97706c0c88be980c8aa1f8fe1c13c5509936757012ffbf7c3`) and look-12 (`c1c8d65036cf6b407fa25620bd9d81957c175915bee72198a4ae08c8008cb59b`) show open eyes at Phase 2.25s, including after resetting to 0 and advancing to 2.25 in separate calls on the loaded asset. Tee-only look-0 closes correctly at the same supplied phase. Reported for investigation; full animation acceptance remains pending.
+## Saved final evidence
 
-| Model 1 file | Reviewed hash |
-| --- | --- |
-| look-0.glb | e2a77ef13b855625e699cc8790e4fed00d6f470eee4aabad629a4815ec07a1dd |
-| look-1.glb | 10204ff05f10abf97706c0c88be980c8aa1f8fe1c13c5509936757012ffbf7c3 |
-| look-2.glb | 0109a2d8237d1eebba5014d0b27ccfeb03a4b4fc34a7700491833f5049853ae7 |
-| look-3.glb | 1e78dae0ab657bdbe5d3ce7d9624927b8d62d6d281580987708c34d1fb8c42c0 |
-| look-4.glb | 5bf0bcf050b2e5cc0021bad998b81fa7ead36212ad1fc311cf720bf1533513fa |
-| look-5.glb | d9c4599d27a461d30167ec560217fd7055e261aeda30241ddf72f07fcff42bc5 |
-| look-6.glb | 83bc170e2feffff4de4df26888fdab74b3ce963a38f9fb8761c9a6cdd5b95007 |
-| look-7.glb | 4cfa36d4c654965df23e7d2b1a87b161629985c88f3f5e19cb66ce7a2444a040 |
-| look-8.glb | f1f9aad181942902ab40151707c16bb470c779c6b7146258a1f4ba8de683f495 |
-| look-9.glb | 5cafd73cd00f8ce868f0d1095a1e84588d9b4d40a5b4c6cfcd409cc9d68fd722 |
-| look-10.glb | a32f99779edcd3915b89cd40df681dce28e4bb337df268c15567417e32909a52 |
-| look-11.glb | 180b359a07b24c2cc7a9c149fc8a6829d5e12676f3a320a1862cfffff4543f6b |
-| look-12.glb | c1c8d65036cf6b407fa25620bd9d81957c175915bee72198a4ae08c8008cb59b |
+These are actual browser screenshots, without image editing. Both models' look-12 hashes are visible in their controls/status.
 
-Model 2 sleeve revision `15e70b95e45144189d40a259bf3fb1cf6e0d0d8d7e6914676ee1b48992b38e8a` was checked Front/Side/Back at 0s. Shorter cuff reveals a skin oval at wrist above the lower shirt hem, with fingers visible below it and blue fabric crossing between, suggesting hand/torso-hem intersection. Reported for a hand-position/hem recheck.
+- [Model 1 final body](mirra-evidence/model-1-final.jpg)
+- [Model 1 restored closed-eye blink](mirra-evidence/model-1-blink.jpg)
+- [Model 1 relaxed hand and wrist](mirra-evidence/model-1-hands-side.jpg)
+- [Model 2 after full live cycle](mirra-evidence/model-2-full-cycle.jpg)
+- [Model 2 closed-eye blink](mirra-evidence/model-2-blink.jpg)
+- [Model 2 corrected cuff coverage and hands](mirra-evidence/model-2-hands-back.jpg)
+- [Exact live-cycle durations](mirra-evidence/live-cycle-log.json)
 
-The implementing agent confirmed the blink regression independently with Three AnimationMixer: baking each body mask detached the original facial action and did not restore its action. The helper now restores the original action/slot/values; both collections are being reexported. Final-hash motion checks are still required. This diagnosis is implementation feedback, distinct from the browser observation above.
+![Model 1 restored blink](mirra-evidence/model-1-blink.jpg)
 
-Model 2 hand-clearance revision `10ae9a11a4f875de15396b46748e578a872253bb665263a379c729ec7a1530f3`: Hands close-up Front/Side/Back at 0s and Back at 6s, full-body Front at 6s. Hands now visible, wrists continuous, fingers distinct and relaxed. Prior major hand/hem intersection is resolved. Small P2 skin sliver remains through the inner sleeve above viewer-right cuff in Back close-up (approximately x769/y289 at 1280 × 720). Slight thumb contact with side hem is plausible. No remaining blocker in this representative's static hand/anatomy checks.
+![Model 2 corrected hands and cuff coverage](mirra-evidence/model-2-hands-back.jpg)
