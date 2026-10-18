@@ -1,6 +1,7 @@
 import { ChatError, chatRequestSchema, chatWithGemini } from "../../../lib/gemini";
 import { fetchWeather } from "../../../lib/weather";
 import { fitSummary } from "../../../lib/body/summary";
+import { assertCapsuleOutfits } from "../../../lib/preview-capsule";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -50,7 +51,11 @@ export async function POST(request: Request) {
       try { weather = await fetchWeather(location, fetch, request.signal); }
       catch (error) { weatherError = error instanceof Error ? error.message : "Weather is unavailable."; }
     }
-    const result = await chatWithGemini(parsed.data, { signal: request.signal, weather, weatherError, fitSummary: await fitSummary(request, parsed.data.bodyScanId) });
+    const result = await chatWithGemini(parsed.data, { capsuleOnly: true, signal: request.signal, weather, weatherError, fitSummary: await fitSummary(request, parsed.data.bodyScanId) });
+    if (result.outfits) {
+      try { assertCapsuleOutfits(result.outfits); }
+      catch (error) { return Response.json({ error: error instanceof Error ? error.message : "The clothing capsule is unavailable." }, { status: 409, headers }); }
+    }
     return Response.json({ ...result, weather, weatherError }, { headers });
   } catch (error) {
     if (error instanceof ChatError) return Response.json({ error: error.message }, { status: error.status, headers });

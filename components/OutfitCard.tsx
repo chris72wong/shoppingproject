@@ -35,7 +35,7 @@ export function OutfitCard({
       <div className="outfit-card-avatar" aria-hidden="true">
         <span className="outfit-number">0{index + 1}</span>
         <Avatar outfit={outfit} profile={scan} extra={extra} interactive={false} />
-        <span className="avatar-preview-label">Illustrative body preview</span>
+        <span className="avatar-preview-label">3D sample body</span>
         <span className="outfit-open">
           <ArrowUpRight size={18} />
         </span>

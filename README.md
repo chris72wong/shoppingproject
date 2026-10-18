@@ -32,14 +32,14 @@ Without a key, the chat shows a setup message. API failures preserve your outfit
 
 ## Try the conversation
 
-1. Ask “Back to school under $100.” Three illustrated outfit cards appear directly beneath the stylist's response, with calculated USD purchase totals.
+1. Ask “Back to school under $100.” Outfit generation uses five product-specific draft garments, clearly labeled as estimated and unvalidated.
 2. Open a card for an expanded outfit. Hover, tap, or keyboard-focus a piece to see its product information, retailer collection link when available, and fit limitations. Read the styling note to understand the combination.
 3. Ask “Keep the pants in outfit two but replace the jacket.” The pants stay in place while an available jacket alternative changes the outfit and total.
 4. Ask “Make all three more affordable.” The stylist looks for lower-priced pieces while preserving previously kept categories. If the available catalog cannot meet the budget, the reply explains that limitation.
 5. Open a look and use its refinement action, or refer to an outfit number in chat. Ambiguous requests ask which outfit to update. The selected outfit appears above the composer and can be cleared.
 6. Save a look from its expanded view. Saved looks are available in a collapsed section below the composer. Refresh to restore the conversation, outfit snapshots, and saved looks.
 
-Press Enter to send a message or Shift+Enter for a new line. Start a new chat with the header action; saved looks remain available. The optional illustrative 3D preview is inside outfit details.
+Press Enter to send a message or Shift+Enter for a new line. Start a new chat with the header action; saved looks remain available. The studio uses an animated MakeHuman sample body; five product-specific garment drafts change with outfits; their physical fit remains unvalidated.
 
 ## Behavior and limitations
 
@@ -47,7 +47,7 @@ Press Enter to send a message or Shift+Enter for a new line. Start a new chat wi
 - **Catalog:** thirty representative clothing concepts with local SVG illustrations and estimated USD prices. Totals exclude tax and shipping; previously owned pieces have zero purchase cost. These are not live inventory, discounts, or verified exact retailer SKUs.
 - **Product links:** official collection pages are clearly labeled as browsing destinations, not exact product matches. Category destinations were checked on October 17, 2026. Concepts without an appropriate destination have no shopping link. Supplied external links are unverified and restricted to HTTPS without embedded credentials.
 - **Product evidence:** materials, exact size guides, garment measurements, and customer fit reviews are unavailable for these demo items. Names and illustrations do not establish those facts. Confirm exact product details with the retailer before buying.
-- **Fit and 3D:** the default mannequin illustrates proportions and colors. An optional, disabled-by-default private LiDAR pilot adds scan imports, companion iOS depth-capture source, operator review, measurements and background garment simulation. It requires configured storage/workers and actual authored garment assets. No physical accuracy trial or validated garment assets are included. See the [LiDAR pilot setup and limitations](docs/lidar-pilot.md).
+- **Fit and 3D:** the default preview is a textured CC0 MakeHuman male body with subtle idle and a separate neutral underlayer. Its capsule meshes are estimated drafts based on published product measurements, with unresolved construction dimensions documented. An optional, disabled-by-default private LiDAR pilot adds scan imports, companion iOS depth-capture source, operator review, measurements and background garment simulation. It requires configured storage/workers and actual authored garment assets. No physical accuracy trial or validated garment assets are included. See the [LiDAR pilot setup and limitations](docs/lidar-pilot.md).
 - **Garment fitting workflow:** exact-product research records, versioned pattern/fabric evidence, size-specific authoring checks, rigid arrangement, individual/layered simulation and physical-validation gates are described in [garment fitting](docs/garment-fitting.md). Initial products remain research-only until measurements, authored assets and real trials are supplied.
 - **Persistence:** browser-local storage with no account or device sync. Existing profile, wardrobe, custom products, saved looks, and scan settings are preserved from older sessions. Only the latest outfit set can be recovered into an older conversation that did not store historical outfit snapshots. The current interface focuses on chat and outfit inspection rather than separate wardrobe/profile/scan screens.
 - **Shopping:** browsing only; no checkout, purchases, retailer API, or Pinterest integration. The small catalog emphasizes casual trouser-based silhouettes and cannot satisfy every budget or styling request.
@@ -74,7 +74,7 @@ Tests cover styling and budget arithmetic, conversational outfit targeting and r
 - `lib/catalog.ts`, `lib/types.ts`, `lib/product-info.ts`: catalog data, types, and honest product/fit disclosures.
 - `lib/storage.ts`: defensive session restore and older conversation recovery.
 - `components/OutfitCard.tsx`, `components/OutfitDetail.tsx`: inline cards and expanded outfit inspection.
-- `components/Avatar.tsx`, `components/FlatAvatar.tsx`: illustrative 3D view and illustrated fallback.
+- `components/Avatar.tsx`, `components/SampleHuman.tsx`: animated sample human and fixed-pose private scan viewer. See [asset status and remaining release gates](docs/avatar-integration.md).
 - `app/globals.css`, `components/outfits.css`: responsive styling.
 - `generate-assets.cjs`: rebuild local garment SVGs with `node generate-assets.cjs`.
 

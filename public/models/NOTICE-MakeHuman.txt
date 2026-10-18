@@ -1,0 +1,18 @@
+The sample human body, default game-engine rig, skin, eyes, eyebrows, hair, teeth and tongue
+are derived from MakeHuman / MPFB system assets released under CC0 1.0 Universal.
+
+Source: https://github.com/makehumancommunity/mpfb2/tree/3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf
+System assets: https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html
+License explanation: https://static.makehumancommunity.org/mpfb/faq/build_other_chargen.html
+CC0 legal text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Original system-asset contributors include Data Collection AB, Joel Palmius,
+Jonas Hauquier and the MakeHuman contributors. Upstream per-asset notices are
+preserved in the source download used by scripts/build-sample-human.py.
+
+The MPFB application code is not redistributed in this repository. It is used
+as an authoring tool. Source download hashes and the tool version are recorded
+in sample-human.provenance.json. The neutral underlayer and idle clip are
+authored for this sample. The base sample-human.glb contains no retailer garment.
+The separate capsule GLBs add FORM-authored product-specific draft geometry;
+those estimates are not supplied or endorsed by UNIQLO and are not verified fit.

@@ -1,4 +1,5 @@
 import { Product, Category } from "./types";
+import { capsuleProducts } from "./capsule-products";
 const uq = "https://www.uniqlo.com/us/en/men/tops?tagDesign=crew-neck";
 const lv =
   "https://www.levi.com/US/en_US/jeans-by-fit-number/men/jeans/501/c/levi_jeans_by_fit_number_men_jeans_501";
@@ -195,6 +196,7 @@ export const catalog: Product[] = rows.map(
   }),
 );
 export const product = (id: string, extra: Product[] = []): Product =>
+  capsuleProducts.find((p) => p.id === id) ||
   extra.find((p) => p.id === id) ||
   catalog.find((p) => p.id === id) ||
   catalog[0];

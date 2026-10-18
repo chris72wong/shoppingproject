@@ -1,7 +1,8 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUp, Check, ChevronDown, History, Pencil, Plus, Sparkles, X } from "lucide-react";
-import { generate } from "@/lib/agent";
+import { capsuleLooks, capsuleProducts, nameCapsuleLook } from "@/lib/capsule-products";
+import { sampleCombination } from "@/lib/preview-capsule";
 import type { ConversationResponse } from "@/lib/conversation";
 import { restore, serializeStore, Store } from "@/lib/storage";
 import { ConversationMessage, Outfit, Product } from "@/lib/types";
@@ -23,7 +24,7 @@ const profile: Store["profile"] = {
   weights: {},
   inspiration: [],
 };
-const starterOutfits = generate("Everyday outfits under $250", profile);
+const starterOutfits = capsuleLooks();
 const initial: Store = {
   profile,
   scan: {
@@ -110,7 +111,15 @@ export default function App() {
     submitting = useRef(false);
   useEffect(() => {
     try {
-      setS(restore(localStorage.getItem("form-studio-v1"), initial));
+      const restored = restore(localStorage.getItem("form-studio-v1"), initial);
+      // Keep historical looks accessible, while introducing the actual capsule
+      // instead of displaying unsupported concept outfits on a bare body.
+      if (restored.outfits.every(outfit => !sampleCombination(outfit.items.map(item => item.productId)))) {
+        restored.lookHistory = rememberOutfits(restored.lookHistory, [...restored.outfits, ...starterOutfits]);
+        restored.outfits = starterOutfits;
+        restored.selected = -1;
+      }
+      setS(restored);
     } catch {
       setNotice("Your saved conversation could not be loaded.");
     }
@@ -278,9 +287,22 @@ export default function App() {
     const current = visible.outfits[visible.index];
     const updated = swapItem(current, oldId, replacement, s.wardrobe.map((i) => i.productId), s.custom);
     if (updated === current) return;
-    const context = { ...visible, outfits: swapLook(visible.outfits, visible.index, updated) };
+    const context = { ...visible, outfits: swapLook(visible.outfits, visible.index, nameCapsuleLook(updated)) };
     setSelection(context);
-    setS((v) => ({ ...v, outfits: context.outfits, lookHistory: rememberOutfits(v.lookHistory, [...visible.outfits, updated]) }));
+    setS((v) => ({ ...v, outfits: context.outfits, lookHistory: rememberOutfits(v.lookHistory, [...visible.outfits, nameCapsuleLook(updated)]) }));
+  }
+  function toggleOuter() {
+    if (submitting.current || !ready) return;
+    const current = visible.outfits[visible.index];
+    if (current.lockedCategories?.includes("outerwear")) return;
+    const outer = capsuleProducts.find(p => p.category === "outerwear")!;
+    const hasOuter = current.items.some(i => i.productId === outer.id);
+    const updated = { ...current, items: hasOuter ? current.items.filter(i => i.productId !== outer.id) : [...current.items, { productId: outer.id, owned: s.wardrobe.some(i => i.productId === outer.id) }] };
+    if (!hasOuter && total(updated, s.custom) > s.profile.budget) { setNotice("The overshirt would exceed your current budget."); return; }
+    if (!sampleCombination(updated.items.map(i => i.productId))) return;
+    const context = { ...visible, outfits: swapLook(visible.outfits, visible.index, nameCapsuleLook(updated)) };
+    setSelection(context);
+    setS(v => ({ ...v, outfits: context.outfits, lookHistory: rememberOutfits(v.lookHistory, [...visible.outfits, nameCapsuleLook(updated)]) }));
   }
   const started = s.messages.length > 0;
   return (
@@ -293,6 +315,7 @@ export default function App() {
         disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
         onSwap={swap}
+        onToggleOuter={toggleOuter}
         onFeedback={(text) => { void send(text, visible).catch(() => {}); }} />
       <main
         className={"conversation " + (started ? "has-messages" : "is-empty")}

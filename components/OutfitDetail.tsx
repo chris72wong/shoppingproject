@@ -12,7 +12,7 @@ import "./outfits.css";
 const Avatar = dynamic(() => import("./Avatar"), {
   ssr: false,
   loading: () => (
-    <p className="outfit-preview-loading">Loading illustrative preview…</p>
+    <p className="outfit-preview-loading">Loading 3D preview…</p>
   ),
 });
 
@@ -133,7 +133,7 @@ export default function OutfitDetail({
         <div className="outfit-detail-grid">
           <div className="outfit-detail-visual">
             <div className="outfit-model outfit-model-main" onMouseLeave={() => inspect(null)}>
-              <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} illustrated
+              <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect}
                 onSelectItem={(id) => {
                   if (hoverTimer.current) clearTimeout(hoverTimer.current);
                   setSelected(id); setSwapping(true);

@@ -44,6 +44,7 @@ export default function BodyPanel({ onPreview }: { onPreview?: (preview: BodyPre
   const preview: BodyPreview | undefined = scan?.state === "ready" && scan.displayUrl ? {
     url: job?.state === "ready" && job.scanId === scan.id && job.bodyVersion === scan.version ? job.resultUrl! : scan.displayUrl,
     height: scan.confirmedHeight, version: scan.version, scanId: scan.id, simulated: job?.state === "ready" && job.scanId === scan.id && job.bodyVersion === scan.version,
+    baseUrl: scan.displayUrl,
   } : undefined;
   useEffect(() => { onPreview?.(preview); }, [preview?.url, preview?.version, preview?.height, preview?.simulated, onPreview]); // Only public references leave this component.
   useEffect(() => () => onPreview?.(undefined), [onPreview]);

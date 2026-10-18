@@ -464,45 +464,6 @@ p {
 .saved-looks .chat-outfits {
   color: var(--ink);
 }
-.flat-avatar {
-  width: 240px;
-  height: 310px;
-  position: relative;
-  margin: auto;
-}
-.flat-head {
-  position: absolute;
-  width: 35px;
-  height: 43px;
-  border-radius: 50%;
-  background: #c2afa0;
-  top: 4px;
-  left: 103px;
-}
-.flat-avatar img {
-  position: absolute;
-  object-fit: contain;
-}
-.flat-outerwear,
-.flat-top {
-  top: 41px;
-  left: 45px;
-  width: 150px;
-  height: 130px;
-  z-index: 2;
-}
-.flat-bottom {
-  top: 155px;
-  left: 65px;
-  width: 110px;
-  height: 125px;
-}
-.flat-shoes {
-  top: 267px;
-  left: 64px;
-  width: 112px;
-  height: 40px;
-}
 .avatar-fallback {
   height: 100%;
   display: grid;

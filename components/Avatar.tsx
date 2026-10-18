@@ -1,35 +1,13 @@
 "use client";
 import { Component, ReactNode, Suspense, useEffect, useRef, useState } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
 import { Outfit, Product, ScanProfile } from "@/lib/types";
 import { PerspectiveCamera } from "three";
-import DatasetAvatar from "./DatasetAvatar";
-import { FlatAvatar } from "./FlatAvatar";
+import SampleHuman from "./SampleHuman";
+import { previewManifest, sampleCombination } from "@/lib/preview-capsule";
 import BodyMesh, { type BodyPreview } from "./BodyMesh";
-function Illustration({ outfit, extra, onItem, onSelectItem, label }: {
-  outfit: Outfit; extra: Product[]; onItem?: (id: string | null) => void;
-  onSelectItem?: (id: string) => void; label: string;
-}) {
-  const container = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState(0.5);
-  useEffect(() => {
-    const element = container.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setFit(Math.min(1, Math.max(0.1, (entry.contentRect.height - 30) / 310), entry.contentRect.width / 240));
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  return <div ref={container} style={{ position: "relative", height: "100%", width: "100%" }}>
-    <div style={{ position: "absolute", left: "50%", top: "45%", transform: `translate(-50%, -50%) scale(${fit})` }}>
-      <FlatAvatar outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} />
-    </div>
-    <span style={{ position: "absolute", bottom: 0, width: "100%", textAlign: "center", fontSize: 11 }}>{label}</span>
-  </div>;
-}
-function FrameAvatar() {
+function FrameAvatar({ reset }: { reset: number }) {
   const { camera, size } = useThree();
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return;
@@ -40,7 +18,11 @@ function FrameAvatar() {
     camera.position.set(0, 0, distance);
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
-  }, [camera, size.width, size.height]);
+  }, [camera, size.width, size.height, reset]);
+  return null;
+}
+function AnimationClock({ elapsed, active }: { elapsed: React.MutableRefObject<number>; active: boolean }) {
+  useFrame((_, delta) => { if (active) elapsed.current += Math.min(delta, .1); });
   return null;
 }
 function LoadingSignal({ onChange }: { onChange: (loading: boolean) => void }) {
@@ -48,13 +30,14 @@ function LoadingSignal({ onChange }: { onChange: (loading: boolean) => void }) {
   return null;
 }
 class Boundary extends Component<
-  { children: ReactNode; fallback: ReactNode },
+  { children: ReactNode; fallback: ReactNode; onFailure?: () => void },
   { failed: boolean }
 > {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
+  componentDidCatch() { this.props.onFailure?.(); }
   render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
@@ -67,7 +50,7 @@ export default function Avatar({
   onSelectItem,
   interactive = true,
   bodyPreview,
-  illustrated = false,
+  previewProductIds,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
@@ -77,41 +60,63 @@ export default function Avatar({
   onSelectItem?: (id: string) => void;
   interactive?: boolean;
   bodyPreview?: BodyPreview;
-  illustrated?: boolean;
+  previewProductIds?: string[];
 }) {
+  const container = useRef<HTMLDivElement>(null), elapsed = useRef(0);
+  const [paused, setPaused] = useState(false), [visible, setVisible] = useState(true);
+  const [foreground, setForeground] = useState(true);
+  const [reduced, setReduced] = useState(true), [reset, setReset] = useState(0);
+  const ids = previewProductIds ?? outfit.items.map(item => item.productId);
+  const combination = sampleCombination(ids);
+  const active = interactive && !bodyPreview && visible && foreground && !paused && !reduced;
   const [loading, setLoading] = useState(false);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [meshError, setMeshError] = useState("");
+  const [garmentError, setGarmentError] = useState(false);
+  useEffect(() => setGarmentError(false), [combination?.url]);
+  useEffect(() => {
+    const media = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches); update(); media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    const element = container.current; if (!element) return;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting)); observer.observe(element);
+    const visibility = () => setForeground(!document.hidden); visibility(); document.addEventListener("visibilitychange", visibility);
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", visibility); };
+  }, [supported]);
   useEffect(() => setMeshError(""), [bodyPreview?.url]);
   useEffect(() => {
     const c = document.createElement("canvas");
     setSupported(!!(c.getContext("webgl2") || c.getContext("webgl")));
   }, []);
-  const fallback = <Illustration outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} label="Illustrated preview · 3D unavailable" />;
-  if (illustrated) return <Illustration outfit={outfit} extra={extra} onItem={onItem} onSelectItem={onSelectItem} label="Outfit illustration · fit is not simulated" />;
   if (supported === null)
     return <div className="avatar-loading">Preparing your studio…</div>;
-  if (!supported) return fallback;
+  if (!supported) return <p role="status">3D is unavailable on this device. Product details remain available.</p>;
   if (meshError) return <div className="avatar-fallback" role="alert">{meshError}</div>;
   return (
-    <Boundary key={bodyPreview?.url ?? "dataset-avatar"} fallback={<div style={{ display: "flex", flexDirection: "column", height: "100%" }}><p role="alert" style={{ textAlign: "center", fontSize: 12 }}>The 3D avatar could not load. Refresh to retry, or use Outfit illustration to keep styling.</p><div style={{ flex: 1, minHeight: 0 }}>{fallback}</div></div>}>
-      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <Boundary fallback={<p role="alert">The 3D human could not load. Refresh to retry; product details remain available.</p>}>
+      <div ref={container} style={{ position: "relative", width: "100%", height: "100%" }}>
       {loading && <div className="avatar-loading" role="status" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", zIndex: 1, pointerEvents: "none" }}>Loading textured human avatar…</div>}
       <Canvas
-        frameloop="demand"
+        frameloop={active ? "always" : "demand"}
         shadows
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 6.5], fov: 30 }}
         gl={{ alpha: true }}
-        aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : "Microsoft Rocketbox sample human avatar. Drag to rotate. Shopping garments are shown in Outfit illustration."}
+        aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : "Animated sample human. Drag to rotate. Product-specific draft clothing; fit unvalidated."}
       >
-        <FrameAvatar />
+        <FrameAvatar reset={reset} />
+        <AnimationClock elapsed={elapsed} active={active} />
         <ambientLight intensity={1.1} />
-        <directionalLight position={[3, 6, 4]} intensity={2} castShadow />
+        <directionalLight position={[3, 6, 4]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} shadow-normalBias={.025} shadow-bias={-.0001} />
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={<LoadingSignal onChange={setLoading} />}>
           <group rotation={[0, angle, 0]}>
-            {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onError={setMeshError} /> : <DatasetAvatar />}
+            {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onSelectItem={onSelectItem} onError={setMeshError} /> :
+              <Boundary key={combination?.url || "base-human"} onFailure={() => setGarmentError(true)} fallback={<SampleHuman productIds={[]} elapsed={elapsed} />}>
+                <Suspense fallback={<SampleHuman productIds={[]} elapsed={elapsed} />}><SampleHuman productIds={ids} elapsed={elapsed} onItem={onItem} onSelectItem={onSelectItem} /></Suspense>
+              </Boundary>}
           </group>
           <ContactShadows
             position={[0, -1.51, 0]}
@@ -132,6 +137,11 @@ export default function Avatar({
           maxPolarAngle={1.8}
         />
       </Canvas>
+      {interactive && <div className="human-controls">
+        {!bodyPreview && <button type="button" disabled={reduced} aria-pressed={!paused && !reduced} onClick={() => setPaused(value => !value)}>{reduced ? "Reduced motion" : paused ? "Play" : "Pause"}</button>}
+        <button type="button" onClick={() => setReset(value => value + 1)}>Reset view</button>
+      </div>}
+      {!bodyPreview && (garmentError || !combination) && <p className="human-preview-status" role="status">{garmentError ? "Clothing could not load. Showing the neutral underlayer; choose another outfit or refresh to retry." : previewManifest.status === "blocked" ? "Animated sample human · clothing capsule awaiting verified garment models" : "This outfit has no product-specific 3D model"}</p>}
       </div>
     </Boundary>
   );

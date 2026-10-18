@@ -55,6 +55,16 @@ Registration checks source bundles, calibration identity, required objects and p
 
 ## Scan review, simulation and user results
 
+### Shopping outfit connection
+
+The outfit studio's **Try selected clothes on your body** panel connects a generated outfit or an inspected individual piece to the private worker. Choose supported sizes and run the simulation; the completed nominal result replaces the body view and its garment meshes can be hovered or clicked for shopping details. Individual pieces and layered outfits are simulated separately, rather than hiding layers from a previously draped outfit.
+
+A shopping `Product` must have `linkType:"product"`, a direct HTTPS `url`, and `garmentIdentity:{sku,region:"US",variant}`. Its ID must equal the authored asset's `productId`, and brand/category/URL/SKU/region/variant must match. Query parameters identifying variants are preserved. Ambiguous matches, demo collection links and legacy assets cannot supply an overlay. The original 30 demo concepts are therefore not magically converted into real garments. Add genuine product entries only after confirming their identity and authoring the corresponding assets; do not relabel the demo concepts as exact SKUs.
+
+Size selectors use that exact asset's labels. Evidence details expose sourced material, calibration status, measurement conventions and retrieval dates. The selected preview size is distinguished from the recommended size. Swaps, changed variants, changed body versions and size edits remove the old overlay; late job results are checked against all selected versions/sizes, and GLB garment group names must match the selected product IDs. The separate pilot preview never appears as though it belongs to the shopping outfit. No shopping preview state is persisted.
+
+This connection requires a personal scan and registered authored garments. The existing sample human has clothing baked into its body mesh and is not an unclothed fitting avatar. Shoes/accessories are explicitly excluded from the current top/bottom/outerwear simulation. Online guides and material descriptions constrain an asset's cut and dimensions, but cannot recover unseen pattern construction or verify fabric mechanics without additional evidence. Unsupported garments stay unavailable, as opposed to receiving approximate geometry.
+
 Apply the additive schema with `npm run body:setup` before deploying the new worker/API. It adds nullable try-on diagnostics. Existing records remain readable. Owners can request garment landmark review of a ready scan; this clears extracted/corrected measurements and invalidates prior results while retaining the display mesh for operator review.
 
 Operators select front/back torso points at matching section heights, confirm scale, A-pose, coverage and close-fitting capture clothing. Version-2 simulation requires this review and the relevant torso anchor pair. Optional left elbow/wrist, upper-arm and thigh surface points support additional measurements. All automatically extracted measurements remain unvalidated and over capture clothing. Manual user corrections also remain unvalidated.

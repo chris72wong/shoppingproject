@@ -1,0 +1,52 @@
+{
+  "retrievedOn": "2026-10-18",
+  "brand": "UNIQLO",
+  "region": "US",
+  "status": "blocked",
+  "method": "Official US product pages, Size Guide > Product Size > CM; published finished measurements. No sample measurements.",
+  "guide": "https://faq-us.uniqlo.com/articles/en_US/FAQ/How-to-Measure",
+  "missingForAll": ["Editable sewing patterns", "Physical fabric calibration", "Sample verification", "Authored garment meshes", "Idle-loop collision and visual review", "Physical fit validation"],
+  "products": [
+    {
+      "name": "Crew Neck T-Shirt", "productId": "489929", "variant": "00 WHITE", "size": "M",
+      "url": "https://www.uniqlo.com/us/en/products/E422992-000/00?colorDisplayCode=00&sizeDisplayCode=004",
+      "revisionNote": "Legacy E422992 URL displayed product ID 489929. Do not equate revisions.",
+      "materialPublished": "100% cotton",
+      "publishedCm": { "backLength": 72, "shoulderSeamToSeam": 48, "chestFlatWidth": 56, "sleeveFromCenterBack": 47 },
+      "missing": ["Armhole", "Sleeve opening", "Neck opening", "Hem and panel geometry"]
+    },
+    {
+      "name": "AIRism oversized T-shirt", "productId": "493232", "variant": "09 BLACK", "size": "M",
+      "url": "https://www.uniqlo.com/us/en/products/E465185-000/00?colorDisplayCode=09&sizeDisplayCode=004",
+      "revisionNote": "Legacy E465185 URL displayed product ID 493232. Do not equate revisions.",
+      "materialPublished": "53% cotton, 47% polyester",
+      "cutPublished": "Oversized, dropped shoulders, half sleeve, narrow crew neck",
+      "publishedCm": { "backLength": 72, "shoulderSeamToSeam": 54, "chestFlatWidth": 58.5, "sleeveFromCenterBack": 55 },
+      "missing": ["Armhole", "Sleeve opening", "Neck opening", "Hem and panel geometry"]
+    },
+    {
+      "name": "Chino Pants", "productId": "482880", "variant": "69 NAVY", "size": "32inch", "sizeCode": "032",
+      "url": "https://www.uniqlo.com/us/en/products/E482880-000/00?colorDisplayCode=69",
+      "materialPublished": "100% cotton", "cutPublished": "Regular fit, tapered silhouette",
+      "publishedCm": { "waistCircumference": 86, "hipCircumference": 105, "thighFlatWidth": 34.5, "hemFlatWidth": 21.5, "inseam": 79 },
+      "availability": "Visible sizes including 32inch showed out of stock; samples unresolved.",
+      "missing": ["Front and back rise", "Crotch curve", "Knee width and position", "Waistband geometry"]
+    },
+    {
+      "name": "Chino Pants", "productId": "482880", "variant": "57 OLIVE", "size": "32inch", "sizeCode": "032",
+      "url": "https://www.uniqlo.com/us/en/products/E482880-000/00?colorDisplayCode=57",
+      "materialPublished": "100% cotton",
+      "publishedCm": { "waistCircumference": 86, "hipCircumference": 105, "thighFlatWidth": 34.5, "hemFlatWidth": 21.5, "inseam": 79 },
+      "evidenceNote": "Shared product table observed with navy selected. Olive code 57 was displayed. Variant-specific sample equality and availability unverified.",
+      "missing": ["Front and back rise", "Crotch curve", "Knee width and position", "Waistband geometry"]
+    },
+    {
+      "name": "Chambray Overshirt", "productId": "482452", "variant": "67 BLUE", "size": "M",
+      "url": "https://www.uniqlo.com/us/en/products/E482452-000/00?colorDisplayCode=67&sizeDisplayCode=004",
+      "materialPublished": "100% cotton slub yarn, prewashed", "cutPublished": "Relaxed fit, long sleeves, regular collar",
+      "publishedCm": { "length": 77, "shoulderSeamToSeam": 53.5, "chestFlatWidth": 62, "sleeveFromCenterBack": 89.5, "neck": 44.5 },
+      "availability": "Selected blue M showed out of stock; samples unresolved.",
+      "missing": ["Armhole and biceps", "Cuff", "Collar, placket and pocket patterns", "Hem geometry"]
+    }
+  ]
+}

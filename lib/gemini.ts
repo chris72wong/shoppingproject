@@ -3,6 +3,8 @@ import { catalog } from "./catalog";
 import { snapshotOutfits, type ConversationResponse } from "./conversation";
 import { chatRequestSchema, stylistPlanSchema, type ChatRequest, type StylistPlan } from "./chat-schema";
 import type { Outfit, WeatherContext } from "./types";
+import { capsuleProducts } from "./capsule-products";
+import { assertCapsuleOutfits } from "./preview-capsule";
 
 export { chatRequestSchema };
 export class ChatError extends Error {
@@ -39,8 +41,8 @@ The optional fitSummary is computed by the server with separate user consent. Ex
 product size recommendations. If withheld or absent, do not infer sizes or claim that simulated drape proves fit.`;
 
 // Rebuild UI outfits from known products. The model cannot invent prices, ownership or URLs.
-export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): ConversationResponse {
-  const products = new Map([...catalog, ...state.custom].map((p) => [p.id, p]));
+export function applyPlan(plan: StylistPlan, state: ChatRequest["state"], capsuleOnly = false): ConversationResponse {
+  const products = new Map([...catalog, ...state.custom, ...capsuleProducts].map((p) => [p.id, p]));
   const profile = { ...plan.profile, weights: {}, inspiration: [] };
   const base = { text: plan.text, profile, pending: "", selected: plan.selected };
   const indices = plan.updates.map((u) => u.index);
@@ -58,7 +60,7 @@ export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): Conve
     const pieces = update.productIds.map((id) => products.get(id));
     if (pieces.some((p) => !p)) throw new ChatError("The stylist suggested an unavailable piece. Please try again.");
     const categories = pieces.map((p) => p!.category);
-    if (new Set(categories).size !== categories.length || !["top", "bottom", "shoes"].every((c) => categories.includes(c as typeof categories[number])))
+    if (new Set(categories).size !== categories.length || !(capsuleOnly ? ["top", "bottom"] : ["top", "bottom", "shoes"]).every((c) => categories.includes(c as typeof categories[number])))
       throw new ChatError("The stylist returned an incomplete clothing combination. Please try again.");
     const previous = plan.action === "refine" ? state.outfits[update.index] : undefined;
     if (previous) {
@@ -76,6 +78,12 @@ export function applyPlan(plan: StylistPlan, state: ChatRequest["state"]): Conve
       })),
     };
   }
+  if (capsuleOnly) {
+    for (const update of plan.updates) {
+      try { assertCapsuleOutfits([next[update.index]]); }
+      catch { throw new ChatError("Only the five product-specific capsule drafts can be generated or refined."); }
+    }
+  }
   const overBudget = plan.updates.some(({ index }) => next[index].items.reduce((sum, i) => sum + (i.owned ? 0 : products.get(i.productId)!.price), 0) > profile.budget);
   return { ...base, outfits: next,
     text: base.text + (overBudget ? ` The available pieces exceed your $${profile.budget} budget; the cards show the actual demo totals.` : ""),
@@ -86,10 +94,11 @@ export async function chatWithGemini(input: ChatRequest, options: {
   apiKey?: string; model?: string; fetcher?: typeof fetch; signal?: AbortSignal;
   weather?: WeatherContext; weatherError?: string;
   fitSummary?: import("./body/summary").FitSummary;
+  capsuleOnly?: boolean;
 } = {}): Promise<ConversationResponse> {
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey?.trim()) throw new ChatError("Gemini is not configured. Add GEMINI_API_KEY to .env.local and restart the server.", 503);
-  const products = [...catalog, ...input.state.custom];
+  const products = [...catalog, ...input.state.custom, ...capsuleProducts];
   if (new Set(products.map((p) => p.id)).size !== products.length)
     throw new ChatError("Custom pieces must have unique catalog IDs.", 400);
   const known = new Set(products.map((p) => p.id));
@@ -104,12 +113,12 @@ export async function chatWithGemini(input: ChatRequest, options: {
       body: JSON.stringify({
         model: options.model ?? process.env.GEMINI_MODEL ?? "gemini-3.8-flash",
         store: false,
-        system_instruction: instructions,
+        system_instruction: options.capsuleOnly ? instructions.replace("Each outfit needs exactly one top, bottom and shoes; outerwear/accessory are optional.", "Each outfit needs exactly one top and bottom; the chambray outerwear is optional. No shoes or accessories are supported. Generate and refine using only the five supplied capsule catalog IDs. These are product-specific estimated drafts, not validated fit. Never promise personal fit or current inventory.") : instructions,
         input: JSON.stringify({
           history: input.history, state: input.state, message: input.message,
           weather: options.weather, weatherError: options.weatherError,
           fitSummary: options.fitSummary,
-          catalog: products.map(({ id, name, category, tags, color, price }) => ({ id, name, category, tags, color, price })),
+          catalog: (options.capsuleOnly ? capsuleProducts : products).map(({ id, name, category, tags, color, price }) => ({ id, name, category, tags, color, price })),
         }),
         response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(stylistPlanSchema) },
         generation_config: { max_output_tokens: 6000 },
@@ -129,7 +138,7 @@ export async function chatWithGemini(input: ChatRequest, options: {
     const output = z.array(z.object({ type: z.string(), content: z.array(z.object({ type: z.string(), text: z.string().optional() })).optional() })).parse(data.steps);
     const result = output.filter((step) => step.type === "model_output")
       .flatMap((step) => step.content ?? []).filter((part) => part.type === "text").map((part) => part.text ?? "").join("");
-    return applyPlan(stylistPlanSchema.parse(JSON.parse(result)), input.state);
+    return applyPlan(stylistPlanSchema.parse(JSON.parse(result)), input.state, options.capsuleOnly);
   } catch (error) {
     if (error instanceof ChatError) throw error;
     throw new ChatError("Gemini returned an incomplete or invalid reply. Your outfits are unchanged. Please try again.");

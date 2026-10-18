@@ -486,10 +486,10 @@
 .studio-retailer { display: inline-block; font-size: 11px; text-decoration: underline; margin: 6px 0; }
 .studio-item-card .swap-choice { margin-top: 7px; }
 .avatar-item-controls button[aria-pressed="true"] { background: #e1e8d3; border-color: #9eac86; }
-.flat-avatar img[role="button"] { cursor: pointer; }
-.flat-avatar img:focus-visible { outline: 3px solid #829663; outline-offset: 3px; }
-.flat-avatar .flat-layered-top { left: 83px; width: 74px; z-index: 3; }
-.flat-avatar .flat-accessory { top: 135px; left: 170px; width: 60px; height: 80px; z-index: 4; }
+.human-controls { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; white-space: nowrap; }
+.human-controls button { background: #fffef8e8; border: 1px solid #c9d1bd; border-radius: 20px; padding: 6px 12px; font-size: 12px; }
+.human-controls button:disabled { opacity: .65; }
+.human-preview-status { position: absolute; bottom: 5px; left: 8px; right: 8px; text-align: center; font-size: 11px; line-height: 1.4; color: #525d44; pointer-events: none; }
 .studio-summary { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 16px; margin: 18px 0; font-size: 13px; }
 .studio-summary small { font-size: 10px; color: var(--muted); margin-left: 4px; }
 .studio-summary button { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #5d7045; }
@@ -501,6 +501,14 @@
 @media (max-width: 850px) { .outfit-studio { overflow: visible; padding-bottom: 10px; } .studio-avatar { height: 400px; } .studio-heading h2 { font-size: 34px; } }
 
 /* Let the full-body avatar fill the space above the composer. */
+.shopping-tryon { flex-shrink: 0; margin: 6px 4px; padding: 10px 14px; border: 1px solid #d4d9c9; border-radius: 10px; font-size: 13px; line-height: 1.6; max-height: 34dvh; overflow: auto; background: #fafbf6; }
+.shopping-tryon summary { cursor: pointer; }
+.shopping-tryon p { margin: 8px 0; }
+.shopping-tryon select { margin: 8px; padding: 6px; }
+.shopping-tryon button { padding: 7px 12px; }
+.shopping-tryon button:disabled { opacity: .5; cursor: default; }
+.shopping-tryon ul { padding-left: 20px; }
+.tryon-product { border-top: 1px solid #e0e4d9; padding: 10px 0; }
 .studio-workspace .outfit-studio { width: 100%; height: 100%; min-height: 0; padding: 0; overflow: visible; display: flex; flex-direction: column; }
 .studio-workspace .studio-stage { width: 100%; flex: 1; min-height: 180px; margin: 0 auto; background: transparent; border-radius: 0; }
 .studio-workspace .studio-avatar { position: absolute; inset: 0; height: 100%; border-radius: 0; cursor: grab; }
@@ -574,3 +582,17 @@
  .studio-details-slot { max-height: none; overflow: visible; }
  .studio-workspace .conversation { margin: auto auto 0; }
 }
+
+.studio-product-picker { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.studio-product-picker button { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fffef8; font-size: 12px; }
+.studio-product-picker button[aria-pressed="true"] { border-color: #657153; background: #e4ebd5; }
+.studio-product-picker img { width: 28px; height: 32px; object-fit: contain; }
+.studio-preview-layout .studio-stage { min-height: 380px; }
+
+
+.studio-workspace { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.studio-workspace .outfit-studio { height: auto; flex: none; }
+.studio-preview-layout { flex: none; min-height: 400px; }
+.studio-preview-layout .studio-stage { height: 400px; }
+.studio-workspace .conversation { align-self: center; margin: 16px auto 0; }
+.studio-product-picker, .avatar-item-controls { flex-shrink: 0; }

@@ -1,5 +1,7 @@
 import { catalog } from "./catalog";
 import type { Product } from "./types";
+import { capsuleProducts } from "./capsule-products";
+import evidence from "../docs/animated-capsule-research.json";
 
 export type ProductInfo = {
   href: string | null;
@@ -33,6 +35,13 @@ function safeExternalUrl(value: string): string | null {
 }
 
 export function getProductInfo(p: Product): ProductInfo {
+  const capsuleIndex = capsuleProducts.findIndex(product => product.id === p.id);
+  if (capsuleIndex >= 0) {
+    const source = evidence.products[capsuleIndex];
+    return { href: source.url, linkLabel: "View researched product", sourceLabel: `UNIQLO US · SKU ${source.productId} · ${source.variant} · retrieved ${evidence.retrievedOn}`,
+      fitSummary: "Estimated product-specific draft. Unpublished pattern dimensions, fabric behavior and physical fit remain unvalidated.",
+      materials: source.materialPublished, sizeGuideUrl: source.url, reviewsSummary: null };
+  }
   const missing = {
     materials: null,
     sizeGuideUrl: null,

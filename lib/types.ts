@@ -12,6 +12,7 @@ export type Product = {
   url: string;
   image: string;
   linkType: "product" | "collection";
+  garmentIdentity?: { sku: string; region: "US"; variant: string };
 };
 export type OutfitItem = { productId: string; owned: boolean };
 export type Outfit = {

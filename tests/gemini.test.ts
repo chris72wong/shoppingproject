@@ -4,6 +4,7 @@ import { applyPlan, chatWithGemini, ChatError, chatRequestSchema } from "../lib/
 import { generate } from "../lib/agent";
 import type { ChatRequest, StylistPlan } from "../lib/chat-schema";
 import { POST } from "../app/api/chat/route";
+import { capsuleLooks } from "../lib/capsule-products";
 
 const profile = { styles: ["minimalist"], colors: ["Stone"], avoid: "", fit: "Regular", budget: 250, occasion: "Everyday" };
 const request = (): ChatRequest => ({
@@ -22,6 +23,19 @@ const apiResponse = (value: StylistPlan) => Response.json({ status: "completed",
   { type: "thought", content: [{ type: "text", text: "not a final reply" }] },
   { type: "model_output", content: [{ type: "text", text: JSON.stringify(value) }] },
 ] });
+
+test("live capsule mode accepts two-piece drafts and rejects legacy catalog substitutions", async () => {
+  const input = request(); input.state.outfits = capsuleLooks();
+  const draftPlan = plan(input); draftPlan.updates[0].productIds = ['uq-489929-white', 'uq-482880-olive'];
+  const result = await chatWithGemini(input, { apiKey: 'test', capsuleOnly: true, fetcher: async (_, init) => {
+    const body = JSON.parse(init!.body as string); const context = JSON.parse(body.input);
+    assert.equal(context.catalog.length, 5); assert.ok(context.catalog.every((p: any) => p.id.startsWith('uq-')));
+    return apiResponse(draftPlan);
+  }});
+  assert.deepEqual(result.outfits![1].items.map(i => i.productId), draftPlan.updates[0].productIds);
+  draftPlan.updates[0].productIds = ['u-tee', 'chino'];
+  assert.throws(() => applyPlan(draftPlan, input.state, true), /five product-specific/);
+});
 
 test("Gemini receives transcript, selected look, preferences and catalog with server authentication", async () => {
   const input = request();

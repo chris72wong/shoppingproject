@@ -20,3 +20,5 @@ pilot-data/
 
 .avatar-source/
 !public/models/avatar.glb
+!public/models/sample-human.glb
+!public/models/capsule/*.glb

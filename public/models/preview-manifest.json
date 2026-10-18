@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "status": "draft",
+  "reason": "Product-specific drafts authorized for visual preview. Missing pattern dimensions are estimated. No sample verification, cloth simulation, full-loop collision approval or personal fit validation.",
+  "avatarVersion": 2,
+  "rigVersion": 1,
+  "idleClip": "FORM_Idle",
+  "products": [
+    {
+      "productId": "uq-489929-white",
+      "sku": "489929",
+      "variant": "00 WHITE",
+      "region": "US",
+      "category": "top",
+      "size": "M",
+      "garmentVersion": 1,
+      "dimensionsVerified": false,
+      "sourceUrls": [
+        "https://www.uniqlo.com/us/en/products/E422992-000/00?colorDisplayCode=00&sizeDisplayCode=004"
+      ]
+    },
+    {
+      "productId": "uq-493232-black",
+      "sku": "493232",
+      "variant": "09 BLACK",
+      "region": "US",
+      "category": "top",
+      "size": "M",
+      "garmentVersion": 1,
+      "dimensionsVerified": false,
+      "sourceUrls": [
+        "https://www.uniqlo.com/us/en/products/E465185-000/00?colorDisplayCode=09&sizeDisplayCode=004"
+      ]
+    },
+    {
+      "productId": "uq-482880-navy",
+      "sku": "482880",
+      "variant": "69 NAVY",
+      "region": "US",
+      "category": "bottom",
+      "size": "32inch / 79 cm inseam",
+      "garmentVersion": 1,
+      "dimensionsVerified": false,
+      "sourceUrls": [
+        "https://www.uniqlo.com/us/en/products/E482880-000/00?colorDisplayCode=69"
+      ]
+    },
+    {
+      "productId": "uq-482880-olive",
+      "sku": "482880",
+      "variant": "57 OLIVE",
+      "region": "US",
+      "category": "bottom",
+      "size": "32inch / 79 cm inseam",
+      "garmentVersion": 1,
+      "dimensionsVerified": false,
+      "sourceUrls": [
+        "https://www.uniqlo.com/us/en/products/E482880-000/00?colorDisplayCode=57"
+      ]
+    },
+    {
+      "productId": "uq-482452-blue",
+      "sku": "482452",
+      "variant": "67 BLUE",
+      "region": "US",
+      "category": "outerwear",
+      "size": "M",
+      "garmentVersion": 1,
+      "dimensionsVerified": false,
+      "sourceUrls": [
+        "https://www.uniqlo.com/us/en/products/E482452-000/00?colorDisplayCode=67&sizeDisplayCode=004"
+      ]
+    }
+  ],
+  "combinations": [
+    {
+      "url": "/models/capsule/draft-1.glb",
+      "sha256": "2ea8246b6bd99e32da1be91e9c91062494be43fc83d7e5f845d542320856406e",
+      "productIds": [
+        "uq-489929-white"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-2.glb",
+      "sha256": "ceb413f84beb7fd8e20e4ef8ada2d5225f3d9621cec003a2667b6bd0f66058eb",
+      "productIds": [
+        "uq-493232-black"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-3.glb",
+      "sha256": "1812bb22129f21ee76d8474f156f71572d38d48759907cf9927ef1c714103a0b",
+      "productIds": [
+        "uq-482880-navy"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-4.glb",
+      "sha256": "d1beae11bc45619ad7370af9ec4ccded8731b81caa9a7f1b7caf3e05132438cd",
+      "productIds": [
+        "uq-482880-olive"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-5.glb",
+      "sha256": "e905af60ed42b74283f6f50c529ca80641670085b52628726ec397d9619b7904",
+      "productIds": [
+        "uq-482452-blue"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-6.glb",
+      "sha256": "50602113d069b86605fde6749d24ba824a3c9d6c4966cbb23c25ff1a0fe33d0e",
+      "productIds": [
+        "uq-489929-white",
+        "uq-482880-navy"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-7.glb",
+      "sha256": "99d21ebfd5954f796864499e0ebcd7b676f4bac9e13b1b6f93262b25019d776e",
+      "productIds": [
+        "uq-489929-white",
+        "uq-482880-navy",
+        "uq-482452-blue"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-8.glb",
+      "sha256": "4c2b3cf82f15ea0d2abcd7b2bcfe9005bb31ae0a36551014d285d162698eab23",
+      "productIds": [
+        "uq-489929-white",
+        "uq-482880-olive"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-9.glb",
+      "sha256": "73557e66fd27511bcb97eb1ded7029c881b422c6fe71cdb8d99c5d107baa3251",
+      "productIds": [
+        "uq-489929-white",
+        "uq-482880-olive",
+        "uq-482452-blue"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-10.glb",
+      "sha256": "869cc75af5bc6e1b045a695f04e8726ed25f2411b977aaebeb253db0e9a5fcb6",
+      "productIds": [
+        "uq-493232-black",
+        "uq-482880-navy"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-11.glb",
+      "sha256": "dc91cce6ba3b3b80b7f2be7bec47cd90819151de696666102e7f1031bef4d80d",
+      "productIds": [
+        "uq-493232-black",
+        "uq-482880-navy",
+        "uq-482452-blue"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-12.glb",
+      "sha256": "bb74abc3b9b1f749423d30ce1780601524735662a984c11ecefdbb1e5244db6f",
+      "productIds": [
+        "uq-493232-black",
+        "uq-482880-olive"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    },
+    {
+      "url": "/models/capsule/draft-13.glb",
+      "sha256": "8cf76f6a3dde4a04f87ea560ae744790f1810812d2f57e3ea235b415df2de4df",
+      "productIds": [
+        "uq-493232-black",
+        "uq-482880-olive",
+        "uq-482452-blue"
+      ],
+      "avatarVersion": 2,
+      "rigVersion": 1,
+      "idleCollisionChecked": false,
+      "visualReviewPassed": false
+    }
+  ]
+}
