@@ -7,7 +7,7 @@ import { authenticate, digest, inviteLogin, issueSession, readSession } from "..
 import { MAX_SCAN_BYTES, meters, uploadSchema } from "../lib/body/contracts";
 import { inspectGlb } from "../lib/body/glb";
 import { assessFit } from "../lib/body/fit";
-import { consumePairing, correctScan, createTryon, deleteScan, ownedScan, ownedTryon, pairing, reviewScan } from "../lib/body/service";
+import { consumePairing, correctScan, createTryon, deleteScan, ownedScan, ownedTryon, pairing, requestFitReview, reviewScan } from "../lib/body/service";
 import { fitSummary } from "../lib/body/summary";
 import type { BodyScan, GarmentAsset, Measurements } from "../lib/body/types";
 import { GET, POST } from "../app/api/body/[...path]/route";
@@ -48,7 +48,7 @@ test("GLB rejects external resources, unsupported extensions, corrupted lengths 
   const corrupt = glb(valid); new DataView(corrupt).setUint32(8, 10, true); assert.throws(() => inspectGlb(corrupt));
 });
 test("sizing abstains for unvalidated bodies, capture clothing, corrections, incomplete evidence and boundary uncertainty", () => {
-  assert.equal(assessFit(body(), garment).size, "M");
+  assert.equal(assessFit(body(), garment).status, "withheld"); // Legacy evidence must be migrated.
   for (const m of [{ ...measurements.chest!, quality: "unvalidated" as const }, { ...measurements.chest!, overClothing: true }, { ...measurements.chest!, uncertainty: .05 }, { ...measurements.chest!, uncertainty: -1 }]) assert.equal(assessFit(body({ measurements: { chest: m } }), garment).status, "withheld");
   assert.equal(assessFit(body({ state: "review" }), garment).status, "withheld");
   assert.equal(assessFit(body(), { ...garment, evidence: { ...garment.evidence, validated: false } }).status,"withheld");
@@ -105,9 +105,15 @@ test("PostgreSQL lifecycle enforces ownership, atomic pairing, cache versions, d
     assert.equal((await ownedScan(alice,id)).state,"processing"); await assert.rejects(reviewScan(operator,id,review),/stale/);
     await query("UPDATE body_scans SET state='ready',share_fit=true,corrections='{}' WHERE id=$1",[id]);
     const request = new Request("http://localhost/api/chat",{headers:{cookie:"form-body="+issueSession(alice)}});
-    assert.deepEqual(await fitSummary(request,id),{status:"available",recommendations:[{productId:"u-tee",size:"M"}]});
+    assert.deepEqual(await fitSummary(request,id),{status:"withheld",recommendations:[]});
     assert.equal(await fitSummary(new Request("http://localhost"),id),undefined);
     await query("UPDATE body_scans SET share_fit=false WHERE id=$1",[id]); assert.equal(await fitSummary(request,id),undefined);
+    const beforeReview = await ownedScan(alice, id);
+    await assert.rejects(requestFitReview(bob, id, { version: beforeReview.version }), /unavailable/);
+    await requestFitReview(alice, id, { version: beforeReview.version });
+    assert.equal((await ownedScan(alice, id)).state, "review");
+    assert.deepEqual((await ownedScan(alice, id)).measurements, {});
+    await assert.rejects(requestFitReview(alice, id, { version: beforeReview.version }), /changed/);
     await deleteScan(alice,id);
     await assert.rejects(ownedScan(alice,id),/unavailable/); await assert.rejects(ownedTryon(alice,created.job.id),/unavailable/);
     const deleted = (await query("SELECT * FROM body_scans WHERE id=$1",[id])).rows[0]; assert.deepEqual(deleted.measurements,{}); assert.deepEqual(deleted.metadata,{});

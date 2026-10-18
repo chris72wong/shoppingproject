@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS body_jobs (
  attempts integer NOT NULL DEFAULT 0, available_at timestamptz NOT NULL DEFAULT now(),
  leased_until timestamptz, lease_token uuid, error text, created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE body_tryons ADD COLUMN IF NOT EXISTS diagnostics jsonb;
 CREATE INDEX IF NOT EXISTS body_jobs_queue ON body_jobs(state, available_at);
 CREATE TABLE IF NOT EXISTS body_pairings (
  token_hash text PRIMARY KEY, owner_id text NOT NULL, expires_at timestamptz NOT NULL,

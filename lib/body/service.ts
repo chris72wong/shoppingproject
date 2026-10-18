@@ -5,6 +5,7 @@ import { BodyError, digest, type Identity } from "./auth";
 import { correctionsSchema, MAX_SCAN_BYTES, reviewSchema, tryOnSchema, uploadSchema } from "./contracts";
 import { objectSize, signedUpload } from "./objects";
 import { assessFit } from "./fit";
+import { garmentSchema, simulationIdentity, SOLVER_VERSION } from "./garment";
 import type { BodyScan, GarmentAsset, Measurements, TryOnJob } from "./types";
 
 type Row = Record<string, any>;
@@ -33,7 +34,7 @@ export async function queue(client: PoolClient, kind: string, scanId: string, tr
   await client.query("INSERT INTO body_jobs(id,kind,scan_id,tryon_id,available_at) VALUES($1,$2,$3,$4,now()+$5*interval '1 second')", [randomUUID(), kind, scanId, tryonId || null, delay]);
 }
 export async function invalidate(client: PoolClient, id: string) {
-  await client.query("UPDATE body_tryons SET state='cancelled',result_key=NULL WHERE scan_id=$1", [id]);
+  await client.query("UPDATE body_tryons SET state='cancelled',result_key=NULL,diagnostics=NULL WHERE scan_id=$1", [id]);
   await client.query("UPDATE body_jobs SET state='cancelled' WHERE scan_id=$1 AND kind<>'purge' AND state IN ('queued','running')", [id]);
 }
 export async function createScan(identity: Identity, data: unknown) {
@@ -82,6 +83,16 @@ export async function correctScan(identity: Identity, id: string, data: unknown)
     await client.query("UPDATE body_scans SET corrections=$2,version=version+1,accessed_at=now() WHERE id=$1", [id, { ...row.corrections, ...corrections }]);
   });
 }
+export async function requestFitReview(identity: Identity, id: string, data: unknown) {
+  const input = correctionsSchema.pick({ version: true }).parse(data);
+  await transaction(async client => {
+    const row = await ownedScan(identity, id, client, true);
+    if (row.version !== input.version || row.state !== "ready" || !row.display_key) throw new BodyError("Scan changed or is not ready.", 409);
+    await invalidate(client, id);
+    await client.query("UPDATE body_scans SET state='review',version=version+1,measurements='{}',corrections='{}',landmarks=NULL,quality=quality || $2::jsonb WHERE id=$1", [id, JSON.stringify({ fitReview: "pending" })]);
+    await client.query("INSERT INTO body_audit(actor,scan_id,action) VALUES($1,$2,'request-fit-review')", [identity.userId, id]);
+  });
+}
 export async function reviewScan(identity: Identity, id: string, data: unknown) {
   const input = reviewSchema.parse(data);
   if (identity.role !== "operator" || identity.scope !== "web") throw new BodyError("Operator access required.", 403);
@@ -89,6 +100,7 @@ export async function reviewScan(identity: Identity, id: string, data: unknown) 
     const row = (await client.query("SELECT * FROM body_scans WHERE id=$1 AND state='review' AND accessed_at>now()-interval '30 days' FOR UPDATE", [id])).rows[0];
     if (!row || row.version !== input.version) throw new BodyError("Review is stale or unavailable.", 409);
     await client.query("UPDATE body_scans SET state=$2,landmarks=$3,version=version+1 WHERE id=$1", [id, input.approve ? "processing" : "rejected", input.approve ? input.landmarks : null]);
+    await client.query("UPDATE body_scans SET quality=quality || $2::jsonb WHERE id=$1", [id, JSON.stringify({ fitReview: input.approve && input.fitReviewConfirmed ? "approved" : "pending" })]);
     if (input.approve) await queue(client, "measure", id);
     else { await queue(client, "purge", id); await client.query("UPDATE body_scans SET display_key=NULL,collision_key=NULL,raw_deleted=true WHERE id=$1", [id]); }
     await client.query("INSERT INTO body_audit(actor,scan_id,action) VALUES($1,$2,$3)", [identity.userId, id, input.approve ? "approve-segmentation" : "reject"]);
@@ -99,7 +111,8 @@ export async function garments(): Promise<GarmentAsset[]> {
 }
 function publicTryon(row: Row): TryOnJob {
   return { schemaVersion: 1, id: row.id, scanId: row.scan_id, bodyVersion: row.body_version, state: row.state, garments: row.garments, progress: row.progress,
-    error: row.error || undefined, ...(row.state === "ready" && row.result_key ? { resultUrl: `/api/body/tryons/${row.id}/asset` } : {}) };
+    error: row.error || undefined, previewStatus: "estimated", diagnostics: row.diagnostics || undefined,
+    ...(row.state === "ready" && row.result_key ? { resultUrl: `/api/body/tryons/${row.id}/asset` } : {}) };
 }
 export async function createTryon(identity: Identity, data: unknown) {
   const input = tryOnSchema.parse(data);
@@ -109,12 +122,18 @@ export async function createTryon(identity: Identity, data: unknown) {
     if (scan.state !== "ready" || scan.version !== input.version) throw new BodyError("Scan changed or is not ready.", 409);
     const assets: GarmentAsset[] = (await client.query("SELECT data FROM body_garments WHERE enabled=true AND id=ANY($1::uuid[])", [input.garments.map(g => g.garmentId)])).rows.map(r => r.data);
     if (assets.length !== input.garments.length || new Set(assets.map(a => a.category)).size !== assets.length) throw new BodyError("Select at most one supported garment per category.");
+    for (const asset of assets) if (asset.schemaVersion === 2) {
+      if (!garmentSchema.safeParse(asset).success) throw new BodyError("Garment research or authoring evidence is incomplete.", 409);
+      const anchor = asset.category === "bottom" ? "waist" : "chest";
+      if (!scan.landmarks?.[anchor + "Front"] || !scan.landmarks?.[anchor + "Back"]) throw new BodyError("Review front/back torso landmarks before fitting this garment.", 409);
+      if (scan.quality?.fitReview !== "approved") throw new BodyError("Review pose, coverage and capture clothing before fitting.", 409);
+    }
     const selections = input.garments.map(g => {
       const asset = assets.find(a => a.id === g.garmentId)!;
       if (!asset.sizes.some(s => s.label === g.size)) throw new BodyError("Unsupported garment size.");
       return { ...g, version: asset.version };
     }).sort((a,b) => a.garmentId.localeCompare(b.garmentId));
-    const cacheKey = digest(JSON.stringify([scan.id, scan.version, selections, "blender-cloth-v1"]));
+    const cacheKey = digest(JSON.stringify([scan.id, scan.version, selections, assets.slice().sort((a,b) => a.id.localeCompare(b.id)).map(simulationIdentity), SOLVER_VERSION]));
     const row = (await client.query(`INSERT INTO body_tryons(id,scan_id,owner_id,body_version,cache_key,garments,state)
       VALUES($1,$2,$3,$4,$5,$6,'queued') ON CONFLICT(cache_key) DO UPDATE SET cache_key=EXCLUDED.cache_key RETURNING *`, [randomUUID(), scan.id, identity.userId, scan.version, cacheKey, JSON.stringify(selections)])).rows[0];
     if (row.state === "queued" && !(await client.query("SELECT id FROM body_jobs WHERE tryon_id=$1 AND state IN ('queued','running')", [row.id])).rowCount) await queue(client, "simulate", scan.id, row.id);

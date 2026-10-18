@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "body:setup": "node --env-file=.env.local infra/body/setup.mjs",
-    "body:register-garment": "node --env-file=.env.local --import tsx infra/body/register-garment.ts"
+    "body:register-garment": "node --env-file=.env.local --import tsx infra/body/register-garment.ts",
+    "body:research": "tsx infra/body/research-products.ts",
+    "body:validate-measurements": "node --env-file=.env.local --import tsx infra/body/validate-measurements.ts",
+    "body:garment-schema": "tsx infra/body/export-garment-schema.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",

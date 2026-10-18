@@ -2,7 +2,8 @@ import { z } from "zod";
 import { authenticate, BodyError, checkOrigin, enabled, inviteLogin, issueSession } from "@/lib/body/auth";
 import { db } from "@/lib/body/db";
 import { assetResponse } from "@/lib/body/objects";
-import { consumePairing, correctScan, createScan, createTryon, deleteScan, finalizeScan, garments, ownedScan, ownedTryon, pairing, publicScan, rateLimit, reviewScan } from "@/lib/body/service";
+import { consumePairing, correctScan, createScan, createTryon, deleteScan, finalizeScan, garments, ownedScan, ownedTryon, pairing, publicScan, rateLimit, requestFitReview, reviewScan } from "@/lib/body/service";
+import researchProducts from "@/infra/body/research/products.json";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -37,6 +38,7 @@ async function handle(request: Request, context: { params: Promise<{ path: strin
     if (route === "session" && method === "DELETE") return json({ ok: true }, 200, { "Set-Cookie": "form-body=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0" });
     if (route === "pairings" && method === "POST") { await rateLimit("pair:" + identity.userId, 10, 3600); return json(await pairing(identity)); }
     if (route === "garments" && method === "GET") return json({ garments: await garments() });
+    if (route === "garment-research" && method === "GET") return json({ products: researchProducts, status: "research-only" });
     if (route === "scans" && method === "POST") return json(await createScan(identity, await body(request)), 201);
     if (route === "scans" && method === "GET") return json({ scans: (await db().query("SELECT * FROM body_scans WHERE owner_id=$1 AND state<>'deleted' AND accessed_at>now()-interval '30 days' ORDER BY created_at DESC LIMIT 50", [identity.userId])).rows.map(r => publicScan(r)) });
     if (route === "review" && method === "GET") {
@@ -52,6 +54,7 @@ async function handle(request: Request, context: { params: Promise<{ path: strin
       if (path.length === 2 && method === "DELETE") { await deleteScan(identity, id); return json({ ok: true }); }
       if (path.length === 3 && path[2] === "finalize" && method === "POST") return json(await finalizeScan(identity, id));
       if (path.length === 3 && path[2] === "corrections" && method === "PATCH") { await correctScan(identity, id, await body(request)); return json({ ok: true }); }
+      if (path.length === 3 && path[2] === "fit-review" && method === "POST") { await requestFitReview(identity, id, await body(request)); return json({ ok: true }); }
       if (path.length === 3 && path[2] === "consent" && method === "PATCH") {
         const { shareFit } = z.object({ shareFit: z.boolean() }).strict().parse(await body(request));
         await ownedScan(identity, id); await db().query("UPDATE body_scans SET share_fit=$2 WHERE id=$1 AND state<>'deleted'", [id, shareFit]); return json({ ok: true });
