@@ -22,3 +22,5 @@ pilot-data/
 !public/models/avatar.glb
 !public/models/sample-human.glb
 !public/models/capsule/*.glb
+/public/models/lifelike-review/
+!public/models/lifelike-v1/*.glb

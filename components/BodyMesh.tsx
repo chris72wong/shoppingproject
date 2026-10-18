@@ -25,7 +25,6 @@ export default function BodyMesh({ preview, onItem, onSelectItem, onPoint, cente
         owned = gltf.scene;
         if (abort.signal.aborted) { dispose(owned); return; }
         owned.traverse(object => {
-          if (typeof object.userData.name === "string" && object.userData.name.startsWith("garment:")) object.name = object.userData.name;
           if (object instanceof Mesh) { object.castShadow = true; object.receiveShadow = true; }
         });
         setScene(owned);
@@ -35,8 +34,9 @@ export default function BodyMesh({ preview, onItem, onSelectItem, onPoint, cente
   }, [preview.url, preview.version, JSON.stringify(preview.productIds), onError]);
   function garmentId(event: ThreeEvent<PointerEvent> | ThreeEvent<MouseEvent>) {
     let object = event.object;
-    while (object.parent && !object.name.startsWith("garment:")) object = object.parent;
-    return object.name.startsWith("garment:") ? object.name.slice(8) : null;
+    const name = () => String(object.userData.name || object.name);
+    while (object.parent && !name().startsWith("garment:")) object = object.parent;
+    return name().startsWith("garment:") ? name().slice(8) : null;
   }
   function hover(event: ThreeEvent<PointerEvent>) {
     if (!onItem) return; event.stopPropagation(); onItem(garmentId(event));

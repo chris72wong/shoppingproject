@@ -16,3 +16,9 @@ in sample-human.provenance.json. The neutral underlayer and idle clip are
 authored for this sample. The base sample-human.glb contains no retailer garment.
 The separate capsule GLBs add FORM-authored product-specific draft geometry;
 those estimates are not supplied or endorsed by UNIQLO and are not verified fit.
+
+The staged lifelike preview also uses CC0 facial expression targets from
+faceunits01, contributed by Mika Suominen. Per-target licensing is retained in
+the official downloaded pack. Source and archive hash are recorded in the
+staged human provenance before any release.
+Source: https://static.makehumancommunity.org/assets/assetpacks/faceunits01.html

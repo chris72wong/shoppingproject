@@ -7,16 +7,27 @@ const product = z.object({ productId: z.string().min(1), sku: z.string().min(1),
   dimensionsVerified: z.boolean(), sourceUrls: z.array(z.url()).min(1),
 }).strict();
 export const previewManifestSchema = z.object({
-  schemaVersion: z.literal(1), status: z.enum(["blocked", "draft", "ready"]), reason: z.string(),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), status: z.enum(["blocked", "draft", "ready"]), reason: z.string(),
   avatarVersion: z.number().int().positive(), rigVersion: z.number().int().positive(), idleClip: z.literal("FORM_Idle"),
+  avatarAsset: asset.optional(),
+  bodyMotionVersion: z.number().int().nonnegative().default(0),
+  facialAnimationVersion: z.number().int().nonnegative().default(0),
+  clothBakeVersion: z.number().int().nonnegative().default(0),
+  clipDurationSeconds: z.number().positive().max(30).default(8),
   products: z.array(product),
   combinations: z.array(asset.extend({ productIds: z.array(z.string().min(1)).min(1).max(3),
     avatarVersion: z.number().int().positive(), rigVersion: z.number().int().positive(),
     idleCollisionChecked: z.boolean(), visualReviewPassed: z.boolean(),
+    bodyMotionVersion: z.number().int().nonnegative().default(0),
+    facialAnimationVersion: z.number().int().nonnegative().default(0),
+    clothBakeVersion: z.number().int().nonnegative().default(0),
+    clipDurationSeconds: z.number().positive().max(30).default(8),
+    reviewReferences: z.array(z.string().regex(/^\/models\/[\w/.-]+\.json$/)).default([]),
   }).strict()),
 }).strict().superRefine((manifest, context) => {
   const issue = (message: string) => context.addIssue({ code: "custom", message });
   const ids = manifest.products.map(p => p.productId);
+  if (manifest.schemaVersion === 2 && (!manifest.avatarAsset || !manifest.bodyMotionVersion || !manifest.facialAnimationVersion || !manifest.clothBakeVersion)) issue("Animated release requires versioned body, face and cloth assets");
   if (new Set(ids).size !== ids.length) issue("Duplicate capsule product");
   const combos = new Set<string>();
   for (const combination of manifest.combinations) {
@@ -24,6 +35,8 @@ export const previewManifestSchema = z.object({
     if (combos.has(key) || new Set(combination.productIds).size !== combination.productIds.length) issue("Duplicate combination");
     combos.add(key);
     if (combination.avatarVersion !== manifest.avatarVersion || combination.rigVersion !== manifest.rigVersion) issue("Incompatible avatar or rig version");
+    if (manifest.schemaVersion === 2 && (["bodyMotionVersion", "facialAnimationVersion", "clothBakeVersion", "clipDurationSeconds"] as const).some(key => combination[key] !== manifest[key])) issue("Incompatible body, facial or cloth animation");
+    if (manifest.schemaVersion === 2 && !combination.reviewReferences.length) issue("Animated combination requires review evidence");
     if (combination.productIds.some(id => !ids.includes(id))) issue("Unknown product in combination");
     const categories = combination.productIds.map(id => manifest.products.find(p => p.productId === id)?.category);
     if (new Set(categories).size !== categories.length) issue("Only one garment per category");
@@ -39,6 +52,17 @@ export const previewManifestSchema = z.object({
   }
 });
 export const previewManifest = previewManifestSchema.parse(rawManifest);
+export function previewAssetUrl(productIds: string[], manifest = previewManifest) {
+  const combination = sampleCombination(productIds, manifest);
+  const selected = combination || manifest.avatarAsset;
+  const url = selected?.url || "/models/sample-human.glb";
+  const garments = combination?.productIds.slice().sort().map(id => {
+    const product = manifest.products.find(p => p.productId === id)!;
+    return [id, product.garmentVersion, product.size];
+  }) || [];
+  const identity = JSON.stringify([manifest.avatarVersion, manifest.rigVersion, manifest.bodyMotionVersion, manifest.facialAnimationVersion, manifest.clothBakeVersion, manifest.clipDurationSeconds, selected?.sha256 || "legacy", garments]);
+  return `${url}?v=${encodeURIComponent(identity)}`;
+}
 export function sampleCombination(productIds: string[], manifest = previewManifest) {
   if (manifest.status === "blocked" || new Set(productIds).size !== productIds.length) return undefined;
   const key = productIds.slice().sort().join("|");

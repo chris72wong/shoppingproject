@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { inspectGlb } from "../lib/body/glb";
-import { previewManifest, previewManifestSchema, sampleCombination, assertCapsuleOutfits } from "../lib/preview-capsule";
+import { previewManifest, previewManifestSchema, sampleCombination, assertCapsuleOutfits, previewAssetUrl } from "../lib/preview-capsule";
 import { capsuleLooks, capsuleProducts } from "../lib/capsule-products";
 import { assertGarmentGroups } from "../lib/body/outfit-tryon";
 import { similarItems } from "../lib/swaps";
@@ -35,6 +35,23 @@ test("capsule remains unavailable until every product, single preview and layere
   assert.equal(previewManifestSchema.safeParse(missingProduct).success, false);
   const wrongRig = ready(); wrongRig.combinations[0].rigVersion++;
   assert.equal(previewManifestSchema.safeParse(wrongRig).success, false);
+});
+
+test("motion, face, cloth, sizes and review evidence invalidate animated preview identity", () => {
+  const raw = ready();
+  const candidate = { ...raw, schemaVersion: 2, avatarAsset: { url: '/models/body.glb', sha256: 'a'.repeat(64) },
+    bodyMotionVersion: 2, facialAnimationVersion: 1, clothBakeVersion: 1, clipDurationSeconds: 12,
+    combinations: raw.combinations.map(combo => ({ ...combo, bodyMotionVersion: 2, facialAnimationVersion: 1, clothBakeVersion: 1, clipDurationSeconds: 12, reviewReferences: ['/models/review.json'] })) };
+  const manifest = previewManifestSchema.parse(candidate);
+  const url = previewAssetUrl(['product-0','product-2'], manifest);
+  const changed = structuredClone(manifest); changed.products[0].garmentVersion++;
+  assert.notEqual(previewAssetUrl(['product-0','product-2'], changed), url);
+  for (const key of ['bodyMotionVersion','facialAnimationVersion','clothBakeVersion','clipDurationSeconds'] as const) {
+    const incompatible = structuredClone(candidate); incompatible.combinations[0][key]++;
+    assert.equal(previewManifestSchema.safeParse(incompatible).success, false);
+  }
+  const unreviewed = structuredClone(candidate); unreviewed.combinations[0].reviewReferences=[];
+  assert.equal(previewManifestSchema.safeParse(unreviewed).success, false);
 });
 
 test("draft capsule includes every exact garment and outfit mapping without asserting verified fit", async () => {
