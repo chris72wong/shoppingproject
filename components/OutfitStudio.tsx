@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { ArrowLeft, ArrowRight, Check, RefreshCw, X } from "lucide-react";
 import { product } from "@/lib/catalog";
@@ -19,17 +19,9 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
   onFeedback: (text: string) => void;
 }) {
   const outfit = outfits[index];
-  const title = useId();
   const [selected, setSelected] = useState<string | null>(null);
   const [pinned, setPinned] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const preview = useRef<HTMLDivElement>(null);
-  const signature = outfit.items.map((item) => item.productId).join("/");
-  useEffect(() => {
-    const animation = !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? preview.current?.animate([{ opacity: 0.25, transform: "translateY(8px) scale(.98)" }, { opacity: 1, transform: "translateY(0) scale(1)" }], { duration: 420, easing: "ease-out" }) : null;
-    return () => animation?.cancel();
-  }, [outfit.id, signature, index]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   const pieces = outfit.items.map((item) => product(item.productId, extra));
   const piece = pieces.find((p) => p.id === selected);
@@ -50,15 +42,11 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
     onSelect((next + outfits.length) % outfits.length);
   }
   return (
-    <section className="outfit-studio" aria-labelledby={title}>
-      <header className="studio-heading" aria-live="polite">
-        <span className="outfit-eyebrow">YOUR EDIT · {index + 1} / {outfits.length}</span>
-        <h2 id={title}>{outfit.name}</h2>
-        <p>{outfit.description}</p>
-      </header>
+    <section className="outfit-studio" aria-label="Outfit studio">
+      <span className="sr-only" aria-live="polite">Look {index + 1} of {outfits.length}: {outfit.name}</span>
       <div className="studio-stage">
         <button className="studio-arrow studio-previous" disabled={disabled || outfits.length < 2} onClick={() => navigate(index - 1)} aria-label="Previous outfit"><ArrowLeft size={20} /></button>
-        <div className="studio-avatar" ref={preview}>
+        <div className="studio-avatar">
           <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} />
         </div>
         <button className="studio-arrow studio-next" disabled={disabled || outfits.length < 2} onClick={() => navigate(index + 1)} aria-label="Next outfit"><ArrowRight size={20} /></button>
@@ -80,11 +68,10 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
           </aside>
         )}
       </div>
-      <p className="outfit-caption">Hover a garment for details & swaps. Drag to rotate.</p>
       <div className="studio-feedback" aria-label="Give your stylist feedback">
-        <button disabled={disabled} onClick={() => onFeedback(`I want to pursue outfit ${index + 1}, ${outfit.name}. Help me refine this look.`)}><Check size={14} />Pursue this look</button>
+        <button disabled={disabled} onClick={() => onFeedback(`I want to pursue outfit ${index + 1}, ${outfit.name}. Help me refine this look.`)}><Check size={14} />Keep</button>
         <button disabled={disabled} onClick={() => onFeedback(`I like outfit ${index + 1}, ${outfit.name}. Please give me more options in this direction.`)}>More like this</button>
-        <button disabled={disabled} onClick={() => onFeedback(`I don't like the concept of outfit ${index + 1}, ${outfit.name}. Please regenerate with a different direction.`)}><RefreshCw size={14} />New direction</button>
+        <button disabled={disabled} onClick={() => onFeedback(`I don't like the concept of outfit ${index + 1}, ${outfit.name}. Please regenerate with a different direction.`)}><RefreshCw size={14} />Refresh</button>
       </div>
     </section>
   );

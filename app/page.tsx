@@ -255,6 +255,7 @@ export default function App() {
     setError("");
     setInput("");
     setEditing(null);
+    closeHistory();
     composer.current?.focus();
   }
   const visible = selection ?? { outfits: s.outfits, index: Math.min(viewIndex, s.outfits.length - 1) };
@@ -270,23 +271,6 @@ export default function App() {
   const started = s.messages.length > 0;
   return (
     <div className="chat-app">
-      <header className="app-header">
-        <a className="wordmark" href="/" aria-label="FORM home">
-          FORM<span>®</span>
-        </a>
-        <span className="header-caption">
-          A little direction. A style of your own.
-        </span>
-        <button
-          className="new-chat"
-          onClick={newConversation}
-          disabled={busy || !ready}
-          aria-label="Start a new conversation"
-        >
-          <Plus size={16} />
-          <span>New chat</span>
-        </button>
-      </header>
       <div className="studio-workspace">
       <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
         budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
@@ -302,6 +286,7 @@ export default function App() {
           onClick={(event) => { if (event.target === event.currentTarget) closeHistory(); }}
           onClose={() => historyButton.current?.focus()}>
           <div className="history-panel">
+            <button className="history-new-chat" onClick={newConversation} disabled={busy || !ready}><Plus size={14} /> New chat</button>
             <header className="history-heading">
               <div><p className="eyebrow">YOUR STYLE JOURNEY</p><h2 id="history-title">Prompt history</h2></div>
               <button type="button" aria-label="Close prompt history" onClick={closeHistory}><X size={20} /></button>
@@ -352,13 +337,11 @@ export default function App() {
             const touch = event.changedTouches[0];
             if (start && touch.clientY - start.y > 55 && Math.abs(touch.clientX - start.x) < 45) openHistory();
           }}>
-          {busy ? <div className="composer-status" role="status"><Sparkles size={13} /> Putting your look together…</div>
-            : <p className="composer-status">{started ? s.messages.findLast((message) => message.role === "agent")?.text : "Tell me what you’re dressing for. We’ll find your look together."}</p>}
+          {busy && <div className="composer-status" role="status"><Sparkles size={13} /> Styling…</div>}
           {editing && <div className="editing-context"><Pencil size={12} /><span>Editing a past prompt · Sending replaces the conversation from here.</span><button type="button" disabled={busy} onClick={() => { setEditing(null); setInput(""); }}>Cancel</button></div>}
           {selection && (
             <div className="selection-context">
-              <Check size={13} /> Refining outfit {selection.index + 1}:{" "}
-              {selection.outfits[selection.index].name}
+              <Check size={13} /> Look {selection.index + 1}
               <button
                 aria-label="Clear selected outfit"
                 onClick={() => setSelection(null)}
@@ -379,14 +362,14 @@ export default function App() {
             <textarea
               id="style-prompt"
               ref={composer}
-              rows={2}
+              rows={1}
               value={input}
               maxLength={2000}
               onChange={(e) => setInput(e.target.value)}
               placeholder={
                 started
                   ? "What would you like to change?"
-                  : "An occasion, a mood, a budget. Start anywhere…"
+                  : "Style a look…"
               }
               onKeyDown={(e) => {
                 if (
@@ -400,9 +383,6 @@ export default function App() {
               }}
             />
             <div className="composer-bottom">
-              <span>
-                <Sparkles size={12} /> Your style. Your pace.
-              </span>
               <button
                 type="submit"
                 className="send-button"
@@ -417,7 +397,6 @@ export default function App() {
             <span className="history-handle" aria-hidden="true" />
             <span><History size={13} /> Prompt history{started ? ` · ${s.messages.filter((message) => message.role === "user").length}` : ""}<ChevronDown size={13} /></span>
           </button>
-          <p className="disclosure">Chats sent to Google Gemini · Illustrated pieces · USD estimates, excluding tax & shipping</p>
           {notice && (
             <p className="storage-notice" role="status">
               {notice}
@@ -426,10 +405,6 @@ export default function App() {
         </div>
       </main>
       </div>
-      <footer className="app-footer">
-        <span>LESS SEARCHING. MORE YOU.</span>
-        <span>Considered looks, made together.</span>
-      </footer>
     </div>
   );
 }

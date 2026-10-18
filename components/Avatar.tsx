@@ -1,22 +1,44 @@
 "use client";
-import { Component, ReactNode, Suspense, useEffect, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Component, ReactNode, Suspense, useEffect, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
 import { Category, Outfit, Product, ScanProfile } from "@/lib/types";
 import { product } from "@/lib/catalog";
-import { Vector2 } from "three";
+import { Group, PerspectiveCamera, Vector2 } from "three";
 import { FlatAvatar } from "./FlatAvatar";
 function Mannequin({
   outfit,
   profile,
   extra,
   onItem,
+  paused,
 }: {
   outfit: Outfit;
   profile: ScanProfile;
   extra: Product[];
   onItem?: (id: string | null) => void;
+  paused: boolean;
 }) {
+  const model = useRef<Group>(null);
+  const phase = useRef(0);
+  useFrame((_, delta) => {
+    if (paused || !model.current) return;
+    // Local time freezes with the pose; clothing updates never reset it.
+    phase.current += Math.min(delta, 0.05);
+    const t = phase.current;
+    model.current.rotation.z = Math.sin(t * 0.85) * 0.018;
+    model.current.rotation.y = Math.sin(t * 0.55) * 0.07;
+    model.current.position.x = Math.sin(t * 0.85) * 0.018;
+    for (const side of [-1, 1]) {
+      const arm = model.current.getObjectByName('arm-pivot-' + side);
+      if (arm) {
+        arm.rotation.x = Math.sin(t * 1.1 + side) * 0.07;
+        arm.rotation.z = side * (0.11 + Math.sin(t * 0.85) * 0.025);
+      }
+    }
+    const head = model.current.getObjectByName('head');
+    if (head) head.rotation.y = Math.sin(t * 0.65) * 0.12;
+  });
   const get = (cat: string) =>
     outfit.items
       .map((i) => product(i.productId, extra))
@@ -50,8 +72,9 @@ function Mannequin({
   );
   return (
     <group
+      ref={model}
       onPointerMove={(event) => {
-        if (!onItem) return;
+        if (!onItem || event.buttons > 0) return;
         event.stopPropagation();
         const name = event.object.name;
         const upper: Category = get("outerwear") ? "outerwear" : "top";
@@ -65,7 +88,7 @@ function Mannequin({
       }}
       onPointerOut={() => onItem?.(null)}
       onClick={(event) => { event.stopPropagation(); }}
-      position={[0, -1.48, 0]}
+      position={[0, -1.6 * profile.height / 175, 0]}
       scale={[profile.chest / 96, profile.height / 175, profile.hip / 98]}
     >
       {mesh([0, 2.83, 0], [0.185, 0.26, 0.19], skin, "head")}
@@ -78,6 +101,7 @@ function Mannequin({
       {[-1, 1].map((s) => (
         <group key={s}>
           <group
+            name={"arm-pivot-" + s}
             position={[s * 0.33 * shoulder, 2.37, 0]}
             rotation={[0, 0, s * 0.11]}
           >
@@ -112,6 +136,20 @@ function Mannequin({
     </group>
   );
 }
+function FrameAvatar({ profile }: { profile: ScanProfile }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    if (!(camera instanceof PerspectiveCamera)) return;
+    const halfFov = camera.fov * Math.PI / 360;
+    const height = 3.2 * profile.height / 175;
+    const width = 1.25 * Math.max(profile.chest / 96, profile.shoulder / 44);
+    const distance = Math.max(height / 2 / Math.tan(halfFov), width / 2 / Math.tan(halfFov) / (size.width / Math.max(1, size.height))) / 0.94;
+    camera.position.set(0, 0, distance);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height, profile.height, profile.chest, profile.shoulder]);
+  return null;
+}
 class Boundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { failed: boolean }
@@ -141,6 +179,15 @@ export default function Avatar({
   onItem?: (id: string | null) => void;
   interactive?: boolean;
 }) {
+  const [rotating, setRotating] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(true);
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(preference.matches);
+    update();
+    preference.addEventListener('change', update);
+    return () => preference.removeEventListener('change', update);
+  }, []);
   const [supported, setSupported] = useState<boolean | null>(null);
   useEffect(() => {
     const c = document.createElement("canvas");
@@ -158,22 +205,23 @@ export default function Avatar({
   return (
     <Boundary fallback={fallback}>
       <Canvas
-        frameloop="demand"
+        frameloop={rotating || reducedMotion || !interactive ? "demand" : "always"}
         shadows
         dpr={[1, 1.5]}
-        camera={{ position: [0, 1, 5.7], fov: 36 }}
+        camera={{ position: [0, 0, 6.5], fov: 30 }}
+        gl={{ alpha: true }}
         aria-label="Interactive 3D fashion mannequin. Drag to rotate."
       >
-        <color attach="background" args={["#deded4"]} />
+        <FrameAvatar profile={profile} />
         <ambientLight intensity={1.7} />
         <directionalLight position={[3, 6, 4]} intensity={3} castShadow />
         <directionalLight position={[-3, 2, -3]} intensity={1.2} />
         <Suspense fallback={null}>
           <group rotation={[0, angle, 0]} scale={zoom}>
-            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} />
+            <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} paused={rotating || reducedMotion || !interactive} />
           </group>
           <ContactShadows
-            position={[0, -1.49, 0]}
+            position={[0, -1.51 * profile.height / 175, 0]}
             opacity={0.35}
             scale={7}
             blur={2.5}
@@ -182,11 +230,12 @@ export default function Avatar({
         </Suspense>
         <OrbitControls
           enabled={interactive}
+          enableDamping={false}
+          onStart={() => { setRotating(true); onItem?.(null); }}
+          onEnd={() => setRotating(false)}
           enableZoom={false}
           target={[0, 0, 0]}
           enablePan={false}
-          minDistance={3.5}
-          maxDistance={9}
           minPolarAngle={0.9}
           maxPolarAngle={1.8}
         />
