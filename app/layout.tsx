@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./mirra.css";
 export const metadata: Metadata = {
-  title: "FORM — Your personal style, figured out.",
+  title: "Mirra — Your personal style, reflected.",
   description:
-    "Explore outfits on your avatar, swap affordable pieces, and refine your look with your personal style assistant.",
+    "Meet your personal stylist. Explore looks, make them yours, and discover the pieces behind every outfit.",
 };
 export default function RootLayout({
   children,

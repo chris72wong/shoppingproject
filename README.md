@@ -1,58 +1,45 @@
-# FORM — Personal Style Studio
+# Mirra — Your personal style, reflected
 
-A minimal, chat-first fashion shopping prototype built with Next.js, React, TypeScript, Three.js, React Three Fiber, and Drei. Describe an occasion, style, and budget; receive three outfit suggestions; inspect individual pieces; and refine the looks in the same conversation.
+A voice and text styling studio: three capsule looks, two animated human models, local garment swaps, conversational refinements, and researched product pages.
 
-## Run
+## Run the demo
 
-Requires Node.js 20.9 or newer and npm.
-
-```sh
-npm install
-npm run dev
-```
-
-Open http://localhost:3000.
-
-On Windows PowerShell, if script execution is disabled, use `npm.cmd install` and `npm.cmd run dev` instead. This does not require changing your execution policy.
-
-For a production build:
+Requires Node.js 20.9+ and npm. All runtime model assets are committed; Blender and ignored authoring downloads are **not** required to run the app.
 
 ```sh
+npm ci
 npm run build
 npm start
 ```
 
-## Gemini setup
+Open http://localhost:3000. For development use `npm run dev`. In PowerShell use `npm.cmd` if execution policy blocks `npm.ps1`; no policy change is necessary.
 
-Copy `.env.example` to `.env.local`, then set `GEMINI_API_KEY` to a key from [Google AI Studio](https://aistudio.google.com/apikey). Restart the development server after changing it. The default model is `gemini-3.8-flash`; override `GEMINI_MODEL` if your project needs another compatible model. The key stays on the server and must never use a `NEXT_PUBLIC_` prefix. No database is required. Gemini usage is subject to your Google project's quota and billing.
+Fresh sessions start in **Sample** mode, which works without credentials and makes no Gemini requests. Use the example buttons for supported scripted interactions. Selecting looks, inspecting pieces, model switching, and button-based swaps are local in either mode. Sample is explicitly scripted, not unrestricted AI.
 
-The chat calls the [Gemini Interactions API](https://ai.google.dev/gemini-api/docs/get-started?lang=javascript) through `POST /api/chat`. It includes the latest 24 transcript messages, the current style profile, selected outfits, wardrobe IDs, and catalog text metadata. Body scans, inspiration images, and product image data are excluded. Requests use `store: false` to disable Interactions conversation storage; Google's other applicable data handling terms still apply. Your browser retains the transcript locally.
+For live styling copy `.env.example` to `.env.local` and configure `GEMINI_API_KEY` (optional `GEMINI_MODEL`, default `gemini-3.8-flash`). Select **Live AI**. Keys remain server-side. Local worktrees can initialize a missing `.env.local` from the primary checkout with `npm run dev`; existing settings are preserved. Deployments must set their own environment variables.
 
-Without a key, the chat shows a setup message. API failures preserve your outfits and restore your message for retry; they do not silently fall back to keyword matching.
+Voice always uses live ElevenLabs, including in Sample mode. Configure `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`, allow microphone access, and follow [voice setup](docs/voice-setup.md). Voice and text share the same validated outfit-update path. Sample voice still consumes ElevenLabs usage; it does not consume Gemini usage. No billing changes are made by this app.
 
-## Try the conversation
+## Recording walkthrough
 
-1. Ask “Back to school under $100.” Outfit generation uses five product-specific draft garments, clearly labeled as estimated and unvalidated.
-2. Open a card for an expanded outfit. Hover, tap, or keyboard-focus a piece to see its product information, retailer collection link when available, and fit limitations. Read the styling note to understand the combination.
-3. Ask “Keep the pants in outfit two but replace the jacket.” The pants stay in place while an available jacket alternative changes the outfit and total.
-4. Ask “Make all three more affordable.” The stylist looks for lower-priced pieces while preserving previously kept categories. If the available catalog cannot meet the budget, the reply explains that limitation.
-5. Open a look and use its refinement action, or refer to an outfit number in chat. Ambiguous requests ask which outfit to update. The selected outfit appears above the composer and can be cleared.
-6. Save a look from its expanded view. Saved looks are available in a collapsed section below the composer. Refresh to restore the conversation, outfit snapshots, and saved looks.
+1. Open the production server at a desktop viewport, preferably 1440×1000. Show Mirra and the idle human.
+2. Select Live AI and say or type “Create three casual outfits under $60.” For a predictable rehearsal select Sample and use its casual-outfit example instead.
+3. Browse the three looks, then select Look 1.
+4. Say or type “Keep the pants in look one, but switch its top to the black tee.”
+5. Switch Model 1 / Model 2, rotate the human, and inspect a clothing piece.
+6. Open **View entire researched outfit**. Show the estimated total and individual retailer links. **Open all product pages** attempts distinct HTTPS destinations; browsers can block multiple tabs, so individual links remain available.
 
-Press Enter to send a message or Shift+Enter for a new line. Start a new chat with the header action; saved looks remain available. The studio uses an animated MakeHuman sample body; five product-specific garment drafts change with outfits; their physical fit remains unvalidated.
+Do not present a Sample rehearsal as a live AI demonstration. See [overnight progress](docs/mirra-overnight-progress.md) and [visual review](docs/mirra-visual-review.md) for exact verification and outstanding limits.
 
-## Behavior and limitations
+## Behavior and scope
 
-- **Gemini stylist:** understands natural-language requests and follow-ups using recent chat history and your style profile. It can ask clarifying questions, generate three looks, select a look, and refine catalog pieces. Structured replies are validated on the server; unknown products and changes to locked or owned pieces are rejected. Ownership and purchase totals are derived from catalog/session data. The original deterministic engine remains for initial demo data and regression tests.
-- **Catalog:** thirty representative clothing concepts with local SVG illustrations and estimated USD prices. Totals exclude tax and shipping; previously owned pieces have zero purchase cost. These are not live inventory, discounts, or verified exact retailer SKUs.
-- **Product links:** official collection pages are clearly labeled as browsing destinations, not exact product matches. Category destinations were checked on October 17, 2026. Concepts without an appropriate destination have no shopping link. Supplied external links are unverified and restricted to HTTPS without embedded credentials.
-- **Product evidence:** materials, exact size guides, garment measurements, and customer fit reviews are unavailable for these demo items. Names and illustrations do not establish those facts. Confirm exact product details with the retailer before buying.
-- **Fit and 3D:** the default preview is a textured CC0 MakeHuman male body with subtle idle and a separate neutral underlayer. Its capsule meshes are estimated drafts based on published product measurements, with unresolved construction dimensions documented. An optional, disabled-by-default private LiDAR pilot adds scan imports, companion iOS depth-capture source, operator review, measurements and background garment simulation. It requires configured storage/workers and actual authored garment assets. No physical accuracy trial or validated garment assets are included. See the [LiDAR pilot setup and limitations](docs/lidar-pilot.md).
-- **Garment fitting workflow:** exact-product research records, versioned pattern/fabric evidence, size-specific authoring checks, rigid arrangement, individual/layered simulation and physical-validation gates are described in [garment fitting](docs/garment-fitting.md). Initial products remain research-only until measurements, authored assets and real trials are supplied.
-- **Persistence:** browser-local storage with no account or device sync. Existing profile, wardrobe, custom products, saved looks, and scan settings are preserved from older sessions. Only the latest outfit set can be recovered into an older conversation that did not store historical outfit snapshots. The current interface focuses on chat and outfit inspection rather than separate wardrobe/profile/scan screens.
-- **Shopping:** browsing only; no checkout, purchases, retailer API, or Pinterest integration. The small catalog emphasizes casual trouser-based silhouettes and cannot satisfy every budget or styling request.
-
-Loading and error feedback stay within the conversation. Outfit details support keyboard interaction, Escape dismissal, and returning focus to the invoking control. Reduced-motion preferences are respected.
+- The demo supports five researched UNIQLO product/color variants, eight outfit combinations, and five individual previews on each independently generated model. Model selection is a visual preference and does not infer gender or change styling preferences.
+- Gemini receives the latest eight turns, current preferences, selected outfits, and supported product metadata. Structured responses are validated against catalog identity, locked garments, ownership, and totals. Requests use `store: false`; provider terms still apply. Browser history stays in local storage without account/device sync.
+- Quota failures preserve the current look. Only an explicit short provider retry delay permits one automatic retry; daily exhaustion is not retried. Retry and Sample mode remain available.
+- Prices are estimates in USD, excluding tax/shipping. Retailer pages establish researched item/color identity, not current availability or guaranteed price. Some variants are sold out. No substitutions, purchases, checkout, new retailers, or search/discovery service are included.
+- Both human appearances use CC0 MakeHuman assets, independently fitted CC0 clothing construction templates, a restrained skeletal idle, and facial morphs. Clothing is an **appearance approximation**, not an exact retailer sewing pattern, physical cloth simulation, personal body scan, or validated fit. Neutral studio sneakers are scenery and are not a researched shopping item. Sources, licenses, and hashes are retained alongside runtime assets and in [asset authoring](docs/mirra-assets.md).
+- Reduced-motion preferences pause the idle. WebGL failure preserves product access. Model choice, mode, looks, and conversation restore locally; existing storage keys are retained for compatibility.
+- The older private body/garment pilot remains in the repository but is removed from the main demo. Its infrastructure and validation requirements are described in [LiDAR pilot](docs/lidar-pilot.md) and [garment fitting](docs/garment-fitting.md).
 
 ## Checks
 
@@ -62,24 +49,17 @@ npm run typecheck
 npm run build
 ```
 
-Tests cover styling and budget arithmetic, conversational outfit targeting and refinements, preserved items and historical snapshots, defensive persistence, product disclosure, category destinations, and unsafe link rejection. Browser verification should exercise generation, expanded details, hover/tap/keyboard inspection, refinement, saving, refresh persistence, and desktop/mobile layouts.
+Tests cover structured styling, targeting and kept/owned items, budgets, history, safe links, quota handling, scripted Sample behavior, and complete self-contained runtime model assets. Visual acceptance additionally requires actual browser inspection; passing tests alone does not approve anatomy, clothing, or animation.
+
+The development-only `/review-mirra` page provides exact-asset views and animation phase controls. It is unavailable in production.
 
 ## Code map
 
-- `app/page.tsx`: chat interface, conversation state, local persistence, and saved looks.
-- `app/api/chat/route.ts`: bounded, validated server endpoint with safe API errors.
-- `lib/gemini.ts`, `lib/chat-schema.ts`: Gemini context, structured replies, and catalog-backed outfit validation.
-- `lib/conversation.ts`: conversational targeting, clarification, and refinement rules.
-- `lib/agent.ts`: outfit generation, alternatives, and price arithmetic.
-- `lib/catalog.ts`, `lib/types.ts`, `lib/product-info.ts`: catalog data, types, and honest product/fit disclosures.
-- `lib/storage.ts`: defensive session restore and older conversation recovery.
-- `components/OutfitCard.tsx`, `components/OutfitDetail.tsx`: inline cards and expanded outfit inspection.
-- `components/Avatar.tsx`, `components/SampleHuman.tsx`: animated sample human and fixed-pose private scan viewer. See [asset status and remaining release gates](docs/avatar-integration.md).
-- `app/globals.css`, `components/outfits.css`: responsive styling.
-- `generate-assets.cjs`: rebuild local garment SVGs with `node generate-assets.cjs`.
-
-## Live voice stylist
-
-ElevenAgents voice controls share the Gemini shopping flow and outfit updates. See [voice setup](docs/voice-setup.md) for agent configuration, environment variables, trial verification, and live-call checks.
-
-Local worktrees: running npm run dev initializes a missing .env.local from the primary Git checkout when that file exists there. Existing worktree settings are never overwritten. This file stays ignored and is never committed; production deployments must configure their own environment variables.
+- `app/page.tsx`: studio, conversation, modes, local persistence.
+- `components/OutfitStudio.tsx`: model selector, product inspection, swaps, outfit shopping.
+- `components/Avatar.tsx`, `components/SampleHuman.tsx`: viewing orientation, animation clock, skinned model loading.
+- `lib/avatar-models.ts`, `public/models/mirra-manifest.json`: model-specific preview identity and cache hashes.
+- `lib/sample-stylist.ts`: scripted examples without provider requests.
+- `lib/gemini.ts`, `lib/chat-schema.ts`, `lib/gemini-quota.ts`: bounded live generation, validation, safe quota diagnostics.
+- `components/VoiceStylist.tsx`: ElevenLabs connection, shared styling tool, microphone/cancellation handling.
+- `lib/capsule-products.ts`, `docs/animated-capsule-research.json`: supported catalog and original retailer evidence.

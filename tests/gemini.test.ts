@@ -140,3 +140,17 @@ test("chat accepts permitted device coordinates and rejects out-of-range coordin
     assert.equal(chatRequestSchema.safeParse({ ...request(), location }).success, false);
   }
 });
+
+test("Gemini throttling retries once only with provider guidance and never on daily exhaustion", async () => {
+  const input=request(), before=structuredClone(input);
+  const limited=(daily=false)=>Response.json({error:{details:[{retryDelay:"0.001s"},{violations:[{quotaId:daily?"RequestsPerDay":"RequestsPerMinute"}]}]}},{status:429});
+  let calls=0;
+  const result=await chatWithGemini(input,{apiKey:"test",fetcher:async()=>++calls===1?limited():apiResponse(plan(input))});
+  assert.equal(calls,2);assert.ok(result.outfits);
+  calls=0;
+  await assert.rejects(chatWithGemini(input,{apiKey:"test",fetcher:async()=>{calls++;return limited();}}),error=>error instanceof ChatError && error.status===429);
+  assert.equal(calls,2);
+  calls=0;
+  await assert.rejects(chatWithGemini(input,{apiKey:"test",fetcher:async()=>{calls++;return limited(true);}}),/daily quota/);
+  assert.equal(calls,1);assert.deepEqual(input,before);
+});

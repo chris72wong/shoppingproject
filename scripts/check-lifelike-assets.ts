@@ -44,7 +44,7 @@ for(const mesh of meshes){const names=mesh.morphTargetDictionary||{},values=mesh
 if(blinkLeft<.95||blinkRight<.95)throw new Error('Eyelids do not reach full closure');
 const garmentMeshes=meshes.filter(mesh=>ancestor(mesh,'garment:'));
 at(1/3);
-for(const mesh of garmentMeshes){if(!Object.keys(mesh.morphTargetDictionary||{}).some(name=>name.startsWith('cloth_frame_')))throw new Error('Garment lacks baked cloth');if(!(mesh.morphTargetInfluences||[]).some(value=>value>.9))throw new Error('Cloth morph animation did not bind to '+mesh.name);}
+if(!process.argv.includes('--skeletal'))for(const mesh of garmentMeshes){if(!Object.keys(mesh.morphTargetDictionary||{}).some(name=>name.startsWith('cloth_frame_')))throw new Error('Garment lacks baked cloth');if(!(mesh.morphTargetInfluences||[]).some(value=>value>.9))throw new Error('Cloth morph animation did not bind to '+mesh.name);}
 function geometry(mesh:SkinnedMesh){const points=new Float32Array(mesh.geometry.attributes.position.count*3),p=new Vector3();for(let i=0;i<points.length/3;i++){mesh.getVertexPosition(i,p).applyMatrix4(mesh.matrixWorld);p.toArray(points,i*3);}const geometry=new BufferGeometry();geometry.setAttribute('position',new Float32BufferAttribute(points,3));geometry.setIndex(mesh.geometry.index!.clone());return geometry;}
 let minBodyClearance=Infinity,penetratingSamples=0;
 const collisionsByGarment:Record<string,{minClearanceM:number;penetratingSamples:number}>={};
@@ -66,8 +66,8 @@ if(process.argv.includes('--collisions')){
     body.dispose();
   }
 }
-const report={asset:path,durationSeconds:clip.duration,maxFootDriftM:maxFootDrift,maxHeadMotionM:maxHeadMotion,blinkLeft,blinkRight,garmentMeshCount:garmentMeshes.length,
-  minSampledBodyClearanceM:Number.isFinite(minBodyClearance)?minBodyClearance:null,penetratingSamples,collisionsByGarment,collisionStepSeconds:.25,
+const report={asset:path,appearanceMode:process.argv.includes('--skeletal')?'skeletal preview':'baked cloth',durationSeconds:clip.duration,maxFootDriftM:maxFootDrift,maxHeadMotionM:maxHeadMotion,blinkLeft,blinkRight,garmentMeshCount:garmentMeshes.length,
+  collisionChecksRun:process.argv.includes('--collisions'),minSampledBodyClearanceM:Number.isFinite(minBodyClearance)?minBodyClearance:null,penetratingSamples:process.argv.includes('--collisions')?penetratingSamples:null,collisionsByGarment,collisionStepSeconds:.25,
   limits:'Vertex sampling is a diagnostic, not a proof of complete triangle collision freedom or physical fit.'};
 console.log(JSON.stringify(report,null,2));
 const destination=process.argv.indexOf('--report');if(destination>=0)await writeFile(process.argv[destination+1],JSON.stringify(report,null,2)+'\n');

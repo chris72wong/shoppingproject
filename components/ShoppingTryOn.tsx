@@ -65,8 +65,8 @@ export default function ShoppingTryOn({ products, selectedId, body, onPreview }:
 
   function change(action: () => void) { onPreview(undefined); setRequest(undefined); setState(undefined); action(); }
   return <details className="shopping-tryon">
-    <summary>Try selected clothes on your body</summary>
-    {!body?.scanId ? <p>Add and review a personal body scan in Your body scan. The sample human wears its original clothing and cannot establish your fit.</p> : <>
+    <summary>Private garment pilot</summary>
+    {!body?.scanId ? null : <>
       <div className="avatar-item-controls" aria-label="Try-on selection">
         <button type="button" aria-pressed={!single} onClick={() => change(() => setSingle(false))}>Outfit garments</button>
         <button type="button" aria-pressed={single && targetId === selectedId} disabled={!selectedId} onClick={() => change(() => { setTargetId(selectedId); setSingle(true); })}>Inspected piece</button>

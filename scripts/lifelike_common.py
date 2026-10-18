@@ -1,9 +1,9 @@
 """Shared staging/export utilities for the estimated lifelike preview."""
-import bpy, json, struct, hashlib
+import bpy, json, struct, hashlib, os
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-STAGE=ROOT/'.avatar-source/lifelike'
-STAGE.mkdir(exist_ok=True)
+STAGE=ROOT/'.avatar-source'/os.environ.get('MIRRA_MODEL','lifelike')
+STAGE.mkdir(parents=True,exist_ok=True)
 FPS=24
 END=288
 
@@ -36,7 +36,7 @@ def export_glb(path):
         if 'eyebrow' in material.get('name','').lower():
             # A grayscale eyebrow bump image is not a tangent-space normal map.
             material.pop('normalTexture',None);material['alphaMode']='BLEND'
-        elif 'short02' in material.get('name','').lower():
+        elif any(n in material.get('name','').lower() for n in ['short02','bob01','ponytail01']):
             material['alphaMode']='MASK';material['alphaCutoff']=.45
         else:material.pop('alphaMode',None)
     for clip in doc.get('animations',[]):clip['name']='FORM_Idle'
@@ -81,4 +81,9 @@ def apply_static_modifiers_with_shapes(obj):
         if action:
             obj.data.shape_keys.animation_data_create();obj.data.shape_keys.animation_data.action=action
             obj.data.shape_keys.animation_data.action_slot=action_slot
+            # The caller may restore this source mesh for the next outfit export.
+            # Leaving its action detached silently removes blinks after case zero.
+            old.shape_keys.animation_data.action=action
+            old.shape_keys.animation_data.action_slot=action_slot
+        for key,(_,value) in zip(old.shape_keys.key_blocks,states):key.value=value
     return old

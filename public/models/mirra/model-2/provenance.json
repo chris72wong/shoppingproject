@@ -1,0 +1,64 @@
+{
+  "model": "model-2",
+  "bodySource": {
+    "schemaVersion": 1,
+    "source": "https://github.com/makehumancommunity/mpfb2/tree/3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf",
+    "assetSource": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+    "license": "CC0-1.0",
+    "tool": "Blender 4.5.3 LTS / MPFB 2.0.18",
+    "sha256": "80531307922dde7015ddafd9d7bfc80363ac41a0bd1153bc195fad42d43a5c40",
+    "bytes": 7005976,
+    "heightMeters": 1.68,
+    "rigVersion": 1,
+    "rig": "game_engine",
+    "idleClip": "FORM_Idle",
+    "idleDurationSeconds": 8,
+    "sourceDownloads": {
+      "mpfb.zip": "255edfa59f38fb2274b623e464d324d20cb36e6475b2092487ff706b6300a4d4",
+      "system-assets.zip": "b542127a8e25547c7c29c19f2d1d2adb9a664c80396ecd694095dbc8028a0107"
+    },
+    "measurements": {
+      "height": {
+        "valueM": 1.68,
+        "method": "exported-body height",
+        "validated": false
+      }
+    },
+    "limitations": "Sample body and neutral underlayer only. No shopping garments, personal sizing validation, or cloth physics."
+  },
+  "humanSource": {
+    "sha256": "c93e44e774cd3074333a6e2a425cac7f3edfa77120e93ff495e49cacfb6104e5",
+    "bytes": 12960060,
+    "avatarVersion": 3,
+    "rigVersion": 2,
+    "bodyMotionVersion": 2,
+    "facialAnimationVersion": 1,
+    "clipDurationSeconds": 12,
+    "bodyCycleErrorM": 0.0,
+    "faceUnitSource": "https://static.makehumancommunity.org/assets/assetpacks/faceunits01.html",
+    "faceUnitArchiveSha256": "d113107bd7eb59f3af4df6fc0ec29bfcc593f496d0b336aec14f086a80ce7146",
+    "facialUnits": [
+      "eyeBlinkLeft",
+      "eyeBlinkRight",
+      "browInnerUp",
+      "mouthSmileLeft",
+      "mouthSmileRight"
+    ],
+    "status": "candidate; visual review required",
+    "physicalFitValidated": false
+  },
+  "wardrobeSource": {
+    "model": "model-2",
+    "templateLicense": "CC0-1.0",
+    "sources": [
+      "makehuman_system_assets/clothes/male_casualsuit06",
+      "makehuman_system_assets/clothes/male_casualsuit03",
+      "makehuman_system_assets/clothes/shoes05"
+    ],
+    "neutralFootwearIsCatalogProduct": false,
+    "appearanceApproximation": true,
+    "physicalFitValidated": false
+  },
+  "visualReviewPassed": false,
+  "physicalFitValidated": false
+}

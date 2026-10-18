@@ -5,15 +5,15 @@ import { capsuleLooks, capsuleProducts, nameCapsuleLook } from "@/lib/capsule-pr
 import { sampleCombination } from "@/lib/preview-capsule";
 import type { ConversationResponse } from "@/lib/conversation";
 import { restore, serializeStore, Store } from "@/lib/storage";
-import { ConversationMessage, Outfit, Product } from "@/lib/types";
+import { ConversationMessage, Outfit, Product, AvatarModelId, StylistMode } from "@/lib/types";
+import type { ChatRequest } from "@/lib/chat-schema";
+import { sampleStylist, samplePrompts } from "@/lib/sample-stylist";
 import { product } from "@/lib/catalog";
 import { rememberOutfits, swapLook } from "@/lib/look-history";
 import { total } from "@/lib/agent";
 import { swapItem } from "@/lib/swaps";
 import VoiceStylist from "@/components/VoiceStylist";
 import OutfitStudio from "@/components/OutfitStudio";
-import BodyPanel from "@/components/BodyPanel";
-import type { BodyPreview } from "@/components/BodyMesh";
 const profile: Store["profile"] = {
   styles: ["minimalist", "casual elevated"],
   colors: ["Stone", "Olive", "Black"],
@@ -51,7 +51,8 @@ type Selection = { outfits: Outfit[]; index: number };
 const snapshot = (outfits: Outfit[]) =>
   JSON.parse(JSON.stringify(outfits)) as Outfit[];
 export default function App() {
-  const [bodyPreview, setBodyPreview] = useState<BodyPreview>();
+  const [modelId, setModelId] = useState<AvatarModelId>("model-1");
+  const [mode, setMode] = useState<StylistMode>("sample");
   const [s, setS] = useState<Store>(initial),
     [ready, setReady] = useState(false),
     [input, setInput] = useState(""),
@@ -74,7 +75,7 @@ export default function App() {
     closeHistory();
     requestAnimationFrame(() => composer.current?.focus());
   }
-  const [locationStatus, setLocationStatus] = useState("Requesting location for local weather…");
+  const [locationStatus, setLocationStatus] = useState("Local weather is optional");
   const locationRequest = useRef<Promise<{ latitude: number; longitude: number } | undefined> | null>(null);
   const locationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function locate() {
@@ -102,15 +103,14 @@ export default function App() {
       }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
     });
   }
-  useEffect(() => {
-    if (!locationRequest.current) locate();
-  }, []);
   const bottom = useRef<HTMLDivElement>(null),
     composer = useRef<HTMLTextAreaElement>(null),
     controller = useRef<AbortController | null>(null),
     submitting = useRef(false);
   useEffect(() => {
     try {
+      setModelId(localStorage.getItem("mirra-model") === "model-2" ? "model-2" : "model-1");
+      setMode(localStorage.getItem("mirra-mode") === "live" ? "live" : "sample");
       const restored = restore(localStorage.getItem("form-studio-v1"), initial);
       // Keep historical looks accessible, while introducing the actual capsule
       // instead of displaying unsupported concept outfits on a bare body.
@@ -128,6 +128,10 @@ export default function App() {
       controller.current?.abort();
     };
   }, []);
+  useEffect(() => {
+    if (!ready) return;
+    try { localStorage.setItem("mirra-model", modelId); localStorage.setItem("mirra-mode", mode); } catch { /* Session controls still work. */ }
+  }, [ready, modelId, mode]);
   useEffect(() => {
     if (!ready) return;
     try {
@@ -175,17 +179,12 @@ export default function App() {
     controller.current = abort;
     try {
       const hasLooks = history.some((m) => m.outfits?.length);
-      const location = await locationRequest.current;
+      const location = mode === "live" ? (await locationRequest.current) ?? undefined : undefined;
       if (abort.signal.aborted) throw new Error("Request cancelled.");
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(55000)]),
-        body: JSON.stringify({
-          bodyScanId: bodyPreview?.scanId,
+      const chatRequest: ChatRequest = {
           message: request,
           location,
-          history: history.slice(-24).map(({ role, text }) => ({
+          history: history.slice(-8).map(({ role, text }) => ({
             role, text: text.slice(0, 2000),
           })),
           state: {
@@ -200,12 +199,19 @@ export default function App() {
             wardrobe: s.wardrobe,
             pending: editIndex >= 0 ? "" : pending,
           },
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok)
-        throw new Error(payload.error || "That request could not be completed. Please try again.");
-      const result = payload as ConversationResponse;
+      };
+      let result: ConversationResponse;
+      if (mode === "sample") result = sampleStylist(request, chatRequest.state);
+      else {
+        const response = await fetch("/api/chat", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.any([abort.signal, AbortSignal.timeout(55000)]),
+          body: JSON.stringify(chatRequest),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "That request could not be completed. Please try again.");
+        result = payload as ConversationResponse;
+      }
       const message: ConversationMessage = {
         id: crypto.randomUUID(),
         role: "agent",
@@ -297,6 +303,7 @@ export default function App() {
     if (current.lockedCategories?.includes("outerwear")) return;
     const outer = capsuleProducts.find(p => p.category === "outerwear")!;
     const hasOuter = current.items.some(i => i.productId === outer.id);
+    if (hasOuter && current.items.some(i => i.productId === outer.id && i.owned)) return;
     const updated = { ...current, items: hasOuter ? current.items.filter(i => i.productId !== outer.id) : [...current.items, { productId: outer.id, owned: s.wardrobe.some(i => i.productId === outer.id) }] };
     if (!hasOuter && total(updated, s.custom) > s.profile.budget) { setNotice("The overshirt would exceed your current budget."); return; }
     if (!sampleCombination(updated.items.map(i => i.productId))) return;
@@ -307,10 +314,17 @@ export default function App() {
   const started = s.messages.length > 0;
   return (
     <div className="chat-app">
-      <BodyPanel onPreview={setBodyPreview} />
+      <header className="mirra-header">
+        <a href="/" className="mirra-wordmark" aria-label="Mirra home">mirra<span>✳</span></a>
+        <span className="mirra-tagline">A little more you.</span>
+        <div className="stylist-mode" role="group" aria-label="Stylist mode">
+          <button disabled={busy} aria-pressed={mode === "sample"} onClick={() => { setMode("sample"); setError(""); }}>Sample</button>
+          <button disabled={busy} aria-pressed={mode === "live"} onClick={() => { setMode("live"); setError(""); }}>Live AI</button>
+        </div>
+      </header>
       <div className="studio-workspace">
       <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
-        bodyPreview={bodyPreview}
+        modelId={modelId} onModelChange={setModelId}
         budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
         disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
@@ -355,7 +369,7 @@ export default function App() {
               >
                 {message.role === "agent" && (
                   <div className="message-author">
-                    <Sparkles size={14} /> FORM STYLIST
+                    <Sparkles size={14} /> MIRRA STYLIST
                   </div>
                 )}
                 <p className="message-text">{message.text}</p>
@@ -404,9 +418,12 @@ export default function App() {
           {error && (
             <p className="chat-error" role="alert">
               {error}
+              <button type="button" disabled={busy || !input.trim()} onClick={() => { void send(input, selection ?? visible).catch(() => {}); }}>Retry</button>
+              {mode === "live" && <button type="button" disabled={busy} onClick={() => { setMode("sample"); setError(""); }}>Try sample outfits</button>}
             </p>
           )}
-          <VoiceStylist disabled={!ready || busy} consult={async (message) => { const answer = await send(message, selection ?? visible, undefined, "voice"); if (!answer) throw new Error("The request was cancelled."); return answer; }} />
+          {mode === "sample" && <div className="sample-examples" aria-label="Sample prompts"><span>Sample responses · no Gemini calls</span>{samplePrompts.map(prompt => <button key={prompt} disabled={busy || !ready} onClick={() => { void send(prompt, selection ?? visible).catch(() => {}); }}>{prompt}</button>)}</div>}
+          <VoiceStylist mode={mode} disabled={!ready || busy} consult={async (message) => { const answer = await send(message, selection ?? visible, undefined, "voice"); if (!answer) throw new Error("The request was cancelled."); return answer; }} />
           <form className="composer" onSubmit={submit}>
             <label className="sr-only" htmlFor="style-prompt">
               Message your stylist

@@ -10,11 +10,15 @@ import math
 import struct
 from pathlib import Path
 import sys
+import os
 import bpy
 from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / ".avatar-source"
+MODEL = os.environ.get("MIRRA_MODEL")
+MODEL_SOURCE = SOURCE / MODEL if MODEL else SOURCE
+MODEL_SOURCE.mkdir(parents=True, exist_ok=True)
 REVISION = "3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf"
 sys.path.insert(0, str(SOURCE / "mpfb" / ("mpfb2-" + REVISION) / "src"))
 # Keep MPFB's caches/preferences entirely within this workspace.
@@ -28,15 +32,16 @@ from mpfb.services.targetservice import TargetService
 bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
 macro = TargetService.get_default_macro_info_dict()
-macro["gender"] = 1.0
+macro["gender"] = 0.0 if MODEL == "model-2" else 1.0
 macro["age"] = .4
 body = HumanService.create_human(macro_detail_dict=macro)
 body.name = "body:sample"
-HumanService.set_character_skin(str(SOURCE / "system/skins/young_caucasian_male/young_caucasian_male.mhmat"), body, skin_type="MAKESKIN")
+skin = "young_caucasian_female" if MODEL == "model-2" else "young_caucasian_male"
+HumanService.set_character_skin(str(SOURCE / f"system/skins/{skin}/{skin}.mhmat"), body, skin_type="MAKESKIN")
 rig = HumanService.add_builtin_rig(body, "game_engine")
 rig.name = "FORM_sample_rig_v1"
 assets = []
-for subdir, name, kind in (("eyes", "high-poly", "Eyes"), ("hair", "short02", "Hair"), ("eyebrows", "eyebrow001", "Eyebrows"), ("teeth", "teeth_base", "Teeth"), ("tongue", "tongue01", "Tongue")):
+for subdir, name, kind in (("eyes", "high-poly", "Eyes"), ("hair", "ponytail01" if MODEL == "model-2" else "short02", "Hair"), ("eyebrows", "eyebrow001", "Eyebrows"), ("teeth", "teeth_base", "Teeth"), ("tongue", "tongue01", "Tongue")):
     obj = HumanService.add_mhclo_asset(str(SOURCE / "system" / subdir / name / (name + ".mhclo")), body, asset_type=kind, subdiv_levels=0)
     obj.name = "body:" + kind.lower()
     assets.append(obj)
@@ -50,7 +55,7 @@ body_group = body.vertex_groups.get("body")
 body_ids = {v.index for v in body.data.vertices if any(g.group == body_group.index and g.weight > .5 for g in v.groups)}
 coords = [body.matrix_world @ v.co for v in body.data.vertices if v.index in body_ids]
 bottom, top = min(v.z for v in coords), max(v.z for v in coords)
-factor = 1.75 / (top - bottom)
+factor = (1.68 if MODEL == "model-2" else 1.75) / (top - bottom)
 
 # A plain, unbranded modesty underlayer. Its geometry is separate from the body.
 faces = []
@@ -126,7 +131,7 @@ for material in bpy.data.materials:
         if shader:
             shader.inputs["Roughness"].default_value = .72
             shader.inputs["Metallic"].default_value = 0
-            if not any(word in material.name.lower() for word in ("short02", "eyebrow")):
+            if not any(word in material.name.lower() for word in ("short02", "bob01", "ponytail01", "eyebrow")):
                 for link in list(shader.inputs["Alpha"].links): material.node_tree.links.remove(link)
                 shader.inputs["Alpha"].default_value = 1
                 material.surface_render_method = 'DITHERED'
@@ -144,11 +149,11 @@ for obj in [body, underlayer] + assets:
     for p in obj.data.polygons:
         p.use_smooth = True
 
-output = ROOT / "public/models/sample-human.glb"
+output = MODEL_SOURCE / "base.glb" if MODEL else ROOT / "public/models/sample-human.glb"
 bpy.ops.object.select_all(action="DESELECT")
 for obj in [root, rig, body, underlayer] + assets:
     obj.select_set(True)
-bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE / "sample-human.blend"))
+bpy.ops.wm.save_as_mainfile(filepath=str(MODEL_SOURCE / "sample-human.blend"))
 bpy.ops.export_scene.gltf(filepath=str(output), export_format="GLB", use_selection=True, export_yup=True, export_apply=True,
     export_animations=True, export_animation_mode="ACTIONS", export_frame_range=True, export_force_sampling=True,
     export_extras=False, export_image_format="JPEG", export_jpeg_quality=88)
@@ -167,7 +172,7 @@ def remove_extensions(value):
         for child in value: remove_extensions(child)
 remove_extensions(document)
 for material in document.get("materials", []):
-    if any(word in material.get("name", "").lower() for word in ("short02", "eyebrow")):
+    if any(word in material.get("name", "").lower() for word in ("short02", "bob01", "ponytail01", "eyebrow")):
         material["alphaMode"] = "MASK"
         material["alphaCutoff"] = .45
     else:
@@ -181,10 +186,10 @@ output.write_bytes(data)
 provenance = {"schemaVersion": 1, "source": "https://github.com/makehumancommunity/mpfb2/tree/" + REVISION,
     "assetSource": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
     "license": "CC0-1.0", "tool": "Blender " + bpy.app.version_string + " / MPFB " + ".".join(map(str, mpfb.VERSION)),
-    "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "heightMeters": 1.75,
+    "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "heightMeters": 1.68 if MODEL == "model-2" else 1.75,
     "rigVersion": 1, "rig": "game_engine", "idleClip": "FORM_Idle", "idleDurationSeconds": 8,
     "sourceDownloads": {name: hashlib.sha256((SOURCE / name).read_bytes()).hexdigest() for name in ("mpfb.zip", "system-assets.zip")},
-    "measurements": {"height": {"valueM": 1.75, "method": "exported-body height", "validated": False}},
+    "measurements": {"height": {"valueM": 1.68 if MODEL == "model-2" else 1.75, "method": "exported-body height", "validated": False}},
     "limitations": "Sample body and neutral underlayer only. No shopping garments, personal sizing validation, or cloth physics."}
-(ROOT / "public/models/sample-human.provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
+(MODEL_SOURCE / "base.provenance.json" if MODEL else ROOT / "public/models/sample-human.provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
 print("EXPORTED", len(data))

@@ -2,7 +2,7 @@
 import { Component, ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
-import { Outfit, Product, ScanProfile } from "@/lib/types";
+import { Outfit, Product, ScanProfile, AvatarModelId } from "@/lib/types";
 import { PerspectiveCamera } from "three";
 import SampleHuman from "./SampleHuman";
 import { previewManifest, sampleCombination } from "@/lib/preview-capsule";
@@ -51,6 +51,7 @@ export default function Avatar({
   interactive = true,
   bodyPreview,
   previewProductIds,
+  modelId = "model-1",
 }: {
   outfit: Outfit;
   profile: ScanProfile;
@@ -61,6 +62,7 @@ export default function Avatar({
   interactive?: boolean;
   bodyPreview?: BodyPreview;
   previewProductIds?: string[];
+  modelId?: AvatarModelId;
 }) {
   const container = useRef<HTMLDivElement>(null), elapsed = useRef(0);
   const [paused, setPaused] = useState(false), [visible, setVisible] = useState(true);
@@ -73,7 +75,7 @@ export default function Avatar({
   const [supported, setSupported] = useState<boolean | null>(null);
   const [meshError, setMeshError] = useState("");
   const [garmentError, setGarmentError] = useState(false);
-  useEffect(() => setGarmentError(false), [combination?.url]);
+  useEffect(() => setGarmentError(false), [combination?.url, modelId]);
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduced(media.matches); update(); media.addEventListener("change", update);
@@ -104,7 +106,7 @@ export default function Avatar({
         dpr={[1, 1.5]}
         camera={{ position: [0, 0, 6.5], fov: 30 }}
         gl={{ alpha: true }}
-        aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : "Animated sample human. Drag to rotate. Product-specific draft clothing; fit unvalidated."}
+        aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : `${modelId === "model-1" ? "Model 1" : "Model 2"}. Animated outfit preview. Drag to rotate.`}
       >
         <FrameAvatar reset={reset} />
         <AnimationClock elapsed={elapsed} active={active} />
@@ -114,8 +116,8 @@ export default function Avatar({
         <Suspense fallback={<LoadingSignal onChange={setLoading} />}>
           <group rotation={[0, angle, 0]}>
             {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onSelectItem={onSelectItem} onError={setMeshError} /> :
-              <Boundary key={combination?.url || "base-human"} onFailure={() => setGarmentError(true)} fallback={<SampleHuman productIds={[]} elapsed={elapsed} />}>
-                <Suspense fallback={<SampleHuman productIds={[]} elapsed={elapsed} />}><SampleHuman productIds={ids} elapsed={elapsed} onItem={onItem} onSelectItem={onSelectItem} /></Suspense>
+              <Boundary key={`${modelId}:${combination?.url || "base-human"}`} onFailure={() => setGarmentError(true)} fallback={null}>
+                <Suspense fallback={<LoadingSignal onChange={setLoading} />}><SampleHuman modelId={modelId} productIds={ids} elapsed={elapsed} onItem={onItem} onSelectItem={onSelectItem} /></Suspense>
               </Boundary>}
           </group>
           <ContactShadows
@@ -141,7 +143,7 @@ export default function Avatar({
         {!bodyPreview && <button type="button" disabled={reduced} aria-pressed={!paused && !reduced} onClick={() => setPaused(value => !value)}>{reduced ? "Reduced motion" : paused ? "Play" : "Pause"}</button>}
         <button type="button" onClick={() => setReset(value => value + 1)}>Reset view</button>
       </div>}
-      {!bodyPreview && (garmentError || !combination) && <p className="human-preview-status" role="status">{garmentError ? "Clothing could not load. Showing the neutral underlayer; choose another outfit or refresh to retry." : previewManifest.status === "blocked" ? "Animated sample human · clothing capsule awaiting verified garment models" : "This outfit has no product-specific 3D model"}</p>}
+      {!bodyPreview && (garmentError || !combination) && <p className="human-preview-status" role="status">{garmentError ? "This preview could not load. Choose another model or outfit, or refresh to retry." : "This saved outfit has no matching preview. Choose a current look."}</p>}
       </div>
     </Boundary>
   );

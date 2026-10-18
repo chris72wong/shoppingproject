@@ -24,3 +24,6 @@ pilot-data/
 !public/models/capsule/*.glb
 /public/models/lifelike-review/
 !public/models/lifelike-v1/*.glb
+!public/models/mirra/
+!public/models/mirra/**/
+!public/models/mirra/**/*.glb

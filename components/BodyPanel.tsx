@@ -86,7 +86,7 @@ export default function BodyPanel({ onPreview }: { onPreview?: (preview: BodyPre
           const url = `formcapture://pair?origin=${encodeURIComponent(location.origin)}&token=${result.token}`;
           setQr(await QRCode.toDataURL(url)); setPairExpiry(Date.now() + result.expiresIn * 1000);
         })}>Pair iPhone / iPad</button>
-        {qr && <div><img src={qr} alt="Single-use pairing code for the FORM Capture app" width={220} height={220} /><p>Open with the FORM Capture companion. Expires in five minutes; usable once.</p></div>}
+        {qr && <div><img src={qr} alt="Single-use pairing code for the Mirra Capture app" width={220} height={220} /><p>Open with the Mirra Capture companion. Expires in five minutes; usable once.</p></div>}
         <button disabled={busy} onClick={() => void run(load)}>Refresh scans</button>
         {!!scans.length && <label>Scan<select value={selected} onChange={e => { setSelected(e.target.value); setJob(null); setAssessments([]); }}><option value="">Illustrative mannequin</option>{scans.map(s => <option key={s.id} value={s.id}>{s.source} · {s.state} · {new Date(s.createdAt).toLocaleDateString()}</option>)}</select></label>}
         {scan && <article>

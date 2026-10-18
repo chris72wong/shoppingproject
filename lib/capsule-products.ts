@@ -24,8 +24,8 @@ export function nameCapsuleLook(outfit: Outfit): Outfit {
 export function capsuleLooks(): Outfit[] {
   return [[0,2], [1,3], [0,3,4]].map((indices, i) => ({
     id: `capsule-draft-${i+1}`, name: ["White tee & navy chinos", "Oversized black & olive", "Blue chambray layers"][i],
-    description: "Product-specific draft on the sample body. Estimated appearance; physical fit unvalidated.",
-    rationale: "Published garment measurements guide these fixed-size drafts. Unpublished pattern dimensions are estimated.",
-    tags: ["capsule draft"], occasion: "Everyday", items: indices.map(index => ({ productId: capsuleProducts[index].id, owned: false })),
+    description: ["A fresh everyday pairing.", "Quiet contrast, effortless proportions.", "An easy layer for wherever the day goes."][i],
+    rationale: ["A clean white tee and deep navy chinos. Simple contrast that feels considered without trying too hard.", "An oversized black tee meets earthy olive chinos. A relaxed silhouette with just enough contrast.", "Blue chambray adds texture over a white tee, while olive chinos keep the palette grounded."][i],
+    tags: ["Everyday", "Minimal"], occasion: "Everyday", items: indices.map(index => ({ productId: capsuleProducts[index].id, owned: false })),
   }));
 }

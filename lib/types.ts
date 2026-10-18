@@ -1,4 +1,6 @@
 export type Category = "top" | "bottom" | "shoes" | "outerwear" | "accessory";
+export type AvatarModelId = "model-1" | "model-2";
+export type StylistMode = "sample" | "live";
 export type Product = {
   id: string;
   name: string;

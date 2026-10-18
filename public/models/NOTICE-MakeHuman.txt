@@ -22,3 +22,12 @@ faceunits01, contributed by Mika Suominen. Per-target licensing is retained in
 the official downloaded pack. Source and archive hash are recorded in the
 staged human provenance before any release.
 Source: https://static.makehumancommunity.org/assets/assetpacks/faceunits01.html
+
+## Mirra capsule asset additions
+
+`mirra/model-1` and `mirra/model-2` independently fit the CC0 system clothing
+construction templates male_casualsuit06 and male_casualsuit03 to each body.
+Neutral footwear derives from shoes05. Original pack credits and CC0 status
+are retained in authoring sources; these assets are not retailer sewing patterns
+and are not supplied, endorsed, or fit-validated by UNIQLO. See docs/mirra-assets.md
+and each model directory's provenance.json for sources and reproducibility.

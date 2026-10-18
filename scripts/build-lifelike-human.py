@@ -1,12 +1,12 @@
 """Stage a relaxed 12-second CC0 human; does not replace published assets."""
-import sys,math,json,hashlib
+import sys,math,json,hashlib,os
 from pathlib import Path
 import bpy
 from mathutils import Vector,Quaternion
 sys.path.insert(0,str(Path(__file__).parent))
 from lifelike_common import ROOT,STAGE,FPS,END,export_glb,apply_static_modifiers_with_shapes,normalize_skin_weights
 
-bpy.ops.wm.open_mainfile(filepath=str(ROOT/'.avatar-source/sample-human.blend'))
+bpy.ops.wm.open_mainfile(filepath=str((STAGE if os.environ.get('MIRRA_MODEL') else ROOT/'.avatar-source')/'sample-human.blend'))
 scene=bpy.context.scene;scene.frame_start=0;scene.frame_end=END;scene.render.fps=FPS
 rig=bpy.data.objects['FORM_sample_rig_v1'];rig.animation_data_clear()
 body=bpy.data.objects['body:sample'];root=bpy.data.objects['sample-body-meters']
@@ -32,14 +32,16 @@ for vertex in breath.data:
     vertex.co.y+=vertex.co.y*.025*influence
 
 # Keep ankle position and foot orientation fixed while the pelvis shifts.
-for side in ['l','r']:
+for side in ([] if os.environ.get('MIRRA_MODEL') else ['l','r']):
     calf=rig.pose.bones['calf_'+side];foot=rig.pose.bones['foot_'+side]
     anchor=bpy.data.objects.new('control:ankle_'+side,None);scene.collection.objects.link(anchor)
     anchor.matrix_world=rig.matrix_world@foot.bone.matrix_local
+    if os.environ.get('MIRRA_MODEL'):anchor.location.x*=.65
     ik=calf.constraints.new('IK');ik.target=anchor;ik.chain_count=2;ik.use_stretch=False
     thigh=rig.data.bones['thigh_'+side]
     pole=bpy.data.objects.new('control:knee_'+side,None);scene.collection.objects.link(pole)
     knee=rig.matrix_world@calf.bone.head_local;pole.location=knee+Vector((0,-.6,0));ik.pole_target=pole
+    if os.environ.get('MIRRA_MODEL'):pole.location.x=anchor.location.x
     pole_local=rig.matrix_world.inverted()@pole.location
     chain=foot.bone.head_local-thigh.head_local;axis=(thigh.tail_local-thigh.head_local).normalized()
     projected=chain.cross(pole_local-thigh.head_local).cross(axis).normalized()
@@ -71,6 +73,7 @@ for name,rotation in [('gazeLeft',.045),('gazeRight',-.045)]:
         v.co=center+Quaternion((0,0,1),rotation)@(v.co-center)
 
 for material in bpy.data.materials:
+    if material.name.startswith('uq-'):continue
     if not material.use_nodes:continue
     shader=material.node_tree.nodes.get('Principled BSDF')
     if not shader:continue
@@ -83,14 +86,27 @@ for material in bpy.data.materials:
 relaxed={}
 for side,sign in [('l',1),('r',-1)]:
     upper=rig.data.bones['upperarm_'+side];lower=rig.data.bones['lowerarm_'+side]
-    upper_delta=(upper.tail_local-upper.head_local).normalized().rotation_difference(Vector((sign*.10,-.015,-1)).normalized())
-    lower_delta=(lower.tail_local-lower.head_local).normalized().rotation_difference(Vector((sign*.035,-.10,-1)).normalized())
+    feminine=os.environ.get('MIRRA_MODEL')=='model-2'
+    upper_delta=(upper.tail_local-upper.head_local).normalized().rotation_difference(Vector((sign*(.20 if feminine else .10),-.015,-1)).normalized())
+    lower_delta=(lower.tail_local-lower.head_local).normalized().rotation_difference(Vector((sign*(.10 if feminine else .035),-.10,-1)).normalized())
     uq=upper.matrix_local.to_quaternion();lq=lower.matrix_local.to_quaternion()
     relaxed['upperarm_'+side]=uq.inverted()@upper_delta@uq
     relaxed['lowerarm_'+side]=lq.inverted()@upper_delta.inverted()@lower_delta@lq
     for finger in ['index','middle','ring','pinky']:
         for segment in ['01','02','03']:
             relaxed[f'{finger}_{segment}_{side}']=Quaternion((1,0,0),.10 if segment=='01' else .16)
+
+if os.environ.get('MIRRA_MODEL'):
+    # A quiet standing pose does not need a moving pelvis or leg IK. Align the
+    # anatomical chains directly; the previous IK pole setup bowed the knees.
+    for side,sign in [('l',1),('r',-1)]:
+        thigh=rig.data.bones['thigh_'+side];calf=rig.data.bones['calf_'+side];foot=rig.data.bones['foot_'+side]
+        td=(thigh.tail_local-thigh.head_local).normalized().rotation_difference(Vector((sign*.008,-.025,-1)).normalized())
+        cd=(calf.tail_local-calf.head_local).normalized().rotation_difference(Vector((0,.025,-1)).normalized())
+        tq=thigh.matrix_local.to_quaternion();cq=calf.matrix_local.to_quaternion();fq=foot.matrix_local.to_quaternion()
+        relaxed['thigh_'+side]=tq.inverted()@td@tq
+        relaxed['calf_'+side]=cq.inverted()@td.inverted()@cd@cq
+        relaxed['foot_'+side]=fq.inverted()@cd.inverted()@fq
 
 def motion(frame,preroll=False):
     phase=(frame%END)/END*math.tau
@@ -101,7 +117,7 @@ def motion(frame,preroll=False):
         rig.pose.bones[name].rotation_quaternion=Quaternion().slerp(q,ramp)
     if frame>=0:
         pelvis=rig.pose.bones['pelvis']
-        pelvis.location=pelvis.bone.matrix_local.to_3x3().inverted()@Vector((.008*math.sin(phase),0,-.008))/root.scale.x
+        pelvis.location=Vector((0,0,0)) if os.environ.get('MIRRA_MODEL') else pelvis.bone.matrix_local.to_3x3().inverted()@Vector((.008*math.sin(phase),0,-.008))/root.scale.x
         rig.pose.bones['pelvis'].keyframe_insert('location',frame=frame)
         for name,axis,angle in [('spine_01',(0,1,0),.018*math.sin(phase)),('spine_02',(1,0,0),.018*math.sin(2*phase)),
             ('spine_03',(0,1,0),-.012*math.sin(phase)),('neck_01',(0,0,1),.035*math.sin(phase)),('head',(1,0,0),.018*math.sin(2*phase))]:
@@ -145,7 +161,7 @@ for obj in bpy.data.objects:
     if obj.type=='MESH':normalize_skin_weights(obj,rig)
 for obj in list(bpy.context.selected_objects):obj.select_set(False)
 for obj in bpy.data.objects:
-    if obj.type in ['MESH','ARMATURE','EMPTY']:obj.select_set(True)
+    if obj.type in ['MESH','ARMATURE','EMPTY'] and not obj.name.startswith('garment:'):obj.select_set(True)
 bpy.ops.wm.save_as_mainfile(filepath=str(STAGE/'human.blend'))
 result=export_glb(STAGE/'human.glb')
 result.update({'avatarVersion':3,'rigVersion':2,'bodyMotionVersion':2,'facialAnimationVersion':1,'clipDurationSeconds':12,
