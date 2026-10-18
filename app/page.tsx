@@ -37,7 +37,6 @@ const initial: Store = {
   },
   outfits: starterOutfits,
   lookHistory: rememberOutfits([], starterOutfits),
-  scenery: "studio",
   saved: [],
   wardrobe: ["u-tee", "jeans", "stan"].map((productId) => ({
     id: "owned-" + productId,
@@ -290,8 +289,6 @@ export default function App() {
       <div className="studio-workspace">
       <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
         bodyPreview={bodyPreview}
-        sceneryId={s.scenery ?? "studio"}
-        onScenery={(scenery) => setS((v) => ({ ...v, scenery }))}
         budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
         disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}

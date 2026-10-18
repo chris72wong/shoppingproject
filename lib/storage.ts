@@ -1,5 +1,4 @@
 import { rememberOutfits } from "./look-history";
-import { isScenery, type Scenery } from "./scenery";
 import { snapshotOutfits } from "./conversation";
 import {
   Product,
@@ -15,15 +14,14 @@ export type Store = {
   outfits: Outfit[];
   saved: Outfit[];
   lookHistory?: Outfit[];
-  scenery?: Scenery;
   wardrobe: WardrobeItem[];
   custom: Product[];
   messages: ConversationMessage[];
   selected: number;
 };
 export function serializeStore(store: Store): string {
-  const { profile, outfits, saved, wardrobe, custom, messages, selected, lookHistory, scenery } = store;
-  return JSON.stringify({ profile, outfits, saved, wardrobe, custom, messages, selected, lookHistory, scenery, scan: { fit: store.scan.fit } });
+  const { profile, outfits, saved, wardrobe, custom, messages, selected, lookHistory } = store;
+  return JSON.stringify({ profile, outfits, saved, wardrobe, custom, messages, selected, lookHistory, scan: { fit: store.scan.fit } });
 }
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((x) => typeof x === "string");
@@ -102,7 +100,7 @@ export function restore(raw: string | null, defaults: Store): Store {
       Array.isArray(s.lookHistory) ? s.lookHistory.filter(validOutfit) : [],
       [...s.messages.flatMap((message) => message.outfits ?? []), ...s.saved, ...s.outfits],
     );
-    s.scenery = isScenery(s.scenery) ? s.scenery : "studio";
+    delete (s as Store & { scenery?: unknown }).scenery; // Discard the retired scenery preference.
     s.custom = Array.isArray(s.custom)
       ? s.custom.filter(
           (p) =>

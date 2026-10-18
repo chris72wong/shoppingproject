@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, ArrowRight, RefreshCw, X, ZoomIn, ZoomOut } from "lucide-react";
 import { product } from "@/lib/catalog";
 import { total } from "@/lib/agent";
-import { scenery, type Scenery } from "@/lib/scenery";
 import { similarItems } from "@/lib/swaps";
 import { getProductInfo } from "@/lib/product-info";
 import type { Outfit, Product, ScanProfile } from "@/lib/types";
@@ -14,13 +13,12 @@ import type { BodyPreview } from "./BodyMesh";
 
 const Avatar = dynamic(() => import("./Avatar"), { ssr: false });
 
-export default function OutfitStudio({ outfits, index, scan, extra, budget, wardrobe, disabled, onSelect, onSwap, onFeedback, bodyPreview, sceneryId, onScenery }: {
+export default function OutfitStudio({ outfits, index, scan, extra, budget, wardrobe, disabled, onSelect, onSwap, onFeedback, bodyPreview }: {
   outfits: Outfit[]; index: number; scan: ScanProfile; extra: Product[];
   budget: number; wardrobe: string[]; disabled: boolean;
   onSelect: (index: number) => void; onSwap: (id: string, replacement: Product) => void;
   onFeedback: (text: string) => void;
   bodyPreview?: BodyPreview;
-  sceneryId: Scenery; onScenery: (value: Scenery) => void;
 }) {
   const outfit = outfits[index];
   const [selected, setSelected] = useState<string | null>(null);
@@ -63,14 +61,12 @@ export default function OutfitStudio({ outfits, index, scan, extra, budget, ward
       <span className="sr-only" aria-live="polite">Look {index + 1} of {outfits.length}: {outfit.name}</span>
       <div className="studio-toolbar">
         <div><h1>{outfit.name}</h1><p>Look {index + 1} of {outfits.length} · Select a piece to explore alternatives</p></div>
-        <label className="scenery-picker">Scenery<select value={sceneryId} onChange={(event) => onScenery(event.target.value as Scenery)}>{Object.entries(scenery).map(([id, scene]) => <option key={id} value={id}>{scene.label}</option>)}</select></label>
       </div>
       <div className="studio-preview-layout">
-      <div className={"studio-stage scenery-" + sceneryId}>
-        <span className="scenery-caption">{scenery[sceneryId].description} · Illustrated scenery</span>
+      <div className="studio-stage">
         <button className="studio-arrow studio-previous" disabled={disabled || outfits.length < 2} onClick={() => navigate(index - 1)} aria-label="Previous outfit"><ArrowLeft size={20} /></button>
         <div className="studio-avatar">
-          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} onSelectItem={selectItem} zoom={zoom} sceneryId={sceneryId} bodyPreview={bodyPreview} />
+          <Avatar outfit={outfit} profile={scan} extra={extra} onItem={inspect} onSelectItem={selectItem} zoom={zoom} bodyPreview={bodyPreview} />
         </div>
         <button className="studio-arrow studio-next" disabled={disabled || outfits.length < 2} onClick={() => navigate(index + 1)} aria-label="Next outfit"><ArrowRight size={20} /></button>
       </div>

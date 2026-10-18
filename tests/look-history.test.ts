@@ -39,12 +39,12 @@ test("legacy chat looks and saved looks migrate into history and survive new cha
  const loaded = restore(JSON.stringify({ ...store, saved: [saved], messages: [{ id: "past", role: "agent", text: "Earlier", outfits: past }] }), store);
  assert.ok(loaded.lookHistory?.some((look) => look.name === "Earlier look"));
  assert.ok(loaded.lookHistory?.some((look) => look.name === "Saved look"));
- const reloaded = restore(serializeStore({ ...loaded, messages: [], scenery: "beach" }), store);
- assert.deepEqual(reloaded.lookHistory, loaded.lookHistory); assert.equal(reloaded.scenery, "beach");
+ const reloaded = restore(serializeStore({ ...loaded, messages: [] }), store);
+ assert.deepEqual(reloaded.lookHistory, loaded.lookHistory);
 });
 
-test("invalid historical entries and scenery do not discard valid stored looks", () => {
+test("invalid historical entries and retired scenery do not discard valid stored looks", () => {
  const store = base();
  const loaded = restore(JSON.stringify({ ...store, lookHistory: [null, {}, store.outfits[0]], scenery: "invalid" }), store);
- assert.equal(loaded.scenery, "studio"); assert.deepEqual(loaded.lookHistory, store.outfits);
+ assert.equal("scenery" in loaded, false); assert.deepEqual(loaded.lookHistory, store.outfits);
 });
