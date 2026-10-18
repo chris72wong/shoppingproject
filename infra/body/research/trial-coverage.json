@@ -1,0 +1,7 @@
+{
+  "garments": {
+    "489929": {"sizes": ["S", "M", "L"], "dimensions": ["chest", "shoulder", "sleeve", "upperArm"], "configurations": ["individual", "layered"]},
+    "482880": {"sizes": ["30inch", "32inch", "34inch"], "dimensions": ["waist", "hip", "inseam", "thigh"], "configurations": ["individual", "layered"]},
+    "482452": {"sizes": ["S", "M", "L"], "dimensions": ["chest", "shoulder", "sleeve", "upperArm"], "configurations": ["individual", "layered"]}
+  }
+}

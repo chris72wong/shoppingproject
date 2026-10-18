@@ -37,13 +37,15 @@ This Windows environment cannot compile or run ARKit. Xcode build, real-device t
 
 ## Operator review and garment authoring
 
+The [garment fitting workflow](garment-fitting.md) defines the current version-2 authoring, registration, additional landmarks, independent measurement validation and physical-trial requirements. Version-1 garment records are migration inputs and cannot establish verified sizing.
+
 Review the complete body surface, scale, capture pose and clothing. Choose a landmark, then click the mesh for chest/waist/hip section heights, both shoulders and crotch. Approve only a correctly segmented body. Reject unsuitable captures and request a rescan. The worker rejects open/ambiguous torso sections and landmarks away from the surface. The web review UI intentionally has no automatic quality approval.
 
 The physical garment milestone needs three real garments—T-shirt, trousers, open overshirt—in S/M/L. Buy/obtain samples outside this application, obtain authoring rights, digitize actual panels and seam construction, and calibrate stretch/bending/density/friction against those samples. No sample purchase or licensing has been performed.
 
-Each private `.blend` library must contain unscaled `panel:` mesh objects with configured Cloth modifiers, seam/rest-shape settings, fabric calibration and material/texture data packed into the file. Each object supplies `fabric_calibration_id`, `body_anchor` (`chestY`, `waistY`, or `hipY`) and `reference_anchor_m`. Arrangement translates panels relative to reviewed body landmarks; it never scales garment dimensions to force a fit. Use the same A-pose and metric conventions as the pilot. Garment libraries are trusted operator-authored assets, never user uploads.
+Each private `.blend` library must contain unscaled `panel:` mesh objects with configured Cloth modifiers, seam/rest-shape settings, fabric calibration and material/texture data packed into the file. Version-2 objects also carry product/size, pattern, arrangement and calibration stamps plus the reference origin and dimensional checks supplied by `workers/body/author.py`. Arrangement rotates/translates panels using reviewed torso and shoulder landmarks; it never scales garment dimensions to force a fit. Use the same A-pose and metric conventions as the pilot. Garment libraries are trusted operator-authored assets, never user uploads.
 
-Upload libraries under `garments/` in private storage, create a manifest using `infra/body/garment.schema.json`, and run `npm run body:register-garment -- path/to/manifest.json`. Registration requires all three sizes and existing objects. Bump versions for every pattern, fabric, texture, or size-range change; asset keys must be immutable. Body ranges refer to physically validated body dimensions in meters, not raw garment circumferences. Keep `evidence.validated=false` until physical fitting succeeds.
+Upload libraries under `garments/` in private storage, create a version-2 manifest using `infra/body/garment.schema.json`, and run `npm run body:register-garment -- path/to/manifest.json`. Registration supports product-specific size labels and requires editable sources, calibration records and existing libraries. Bump versions for every pattern, fabric, texture, or size-range change; asset keys must be immutable. Body ranges refer to physically validated body dimensions in meters, not raw garment circumferences. Keep `evidence.validated=false` and `validation.status="estimated"` until physical fitting succeeds.
 
 Simulation handles all selected layers in one collision world, runs sequential frames, rejects unsettled cloth and obvious penetration, and exports a settled self-contained GLB with `garment:<productId>` object names. It is a fixed-pose appearance preview. Physical fittings are required to validate ease, tightness or size claims. Difficult geometry/materials may fail and require an operator-authored arrangement revision. Cached failures remain visible; request a new job after correcting the body or garment version.
 
@@ -65,6 +67,8 @@ All routes are under `/api/body` and fail closed when the feature is disabled. J
 | `/review`, `/review/:id` | GET / POST | Operator queue / decision |
 | `/review/:id/assets/display` | GET | Audited operator mesh access |
 | `/garments` | GET | Available pilot assets |
+| `/garment-research` | GET | Research candidates and missing evidence; never simulation assets |
+| `/scans/:id/fit-review` | POST | Versioned request for additional operator review |
 | `/tryons`, `/tryons/:id`, `/tryons/:id/asset` | POST / GET / GET | Simulation, progress, private result |
 
 Raw inputs are deleted on reconstruction success; the worker sweeps expired raw data every 30 seconds. Derived assets expire after 30 inactive days. Deletion immediately revokes new API reads and cancels jobs, with background object erasure and a second purge after outstanding upload URLs expire. Already downloaded meshes cannot be recalled. Retention depends on a healthy worker and object store: monitor queue age, raw age and purge failures, and alert before the 24-hour deadline. Do not claim an unconditional storage deletion SLA while services are down. Object versioning/backups need matching deletion policies.

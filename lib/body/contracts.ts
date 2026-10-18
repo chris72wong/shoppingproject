@@ -17,7 +17,11 @@ const approvalSchema = z.object({
   version: z.number().int().positive(), approve: z.literal(true),
   segmentationConfirmed: z.literal(true), closeClothingConfirmed: z.literal(true),
   landmarks: z.object({ chestY: z.number().min(0.1).max(2.5), waistY: z.number().min(0.1).max(2.5), hipY: z.number().min(0.1).max(2.5),
-    shoulderLeft: point, shoulderRight: point, crotch: point }).strict(),
+    shoulderLeft: point, shoulderRight: point, crotch: point,
+    chestFront: point.optional(), chestBack: point.optional(), waistFront: point.optional(), waistBack: point.optional(), hipFront: point.optional(), hipBack: point.optional(),
+    elbowLeft: point.optional(), wristLeft: point.optional(), upperArmLeft: point.optional(), thighLeft: point.optional(),
+  }).strict(),
+  fitReviewConfirmed: z.literal(true).optional(),
 }).strict().refine(v => v.landmarks.chestY > v.landmarks.waistY && v.landmarks.waistY > v.landmarks.hipY, "Landmark heights must descend from chest to hip");
 export const reviewSchema = z.union([approvalSchema, z.object({ version: z.number().int().positive(), approve: z.literal(false) }).strict()]);
 export const tryOnSchema = z.object({

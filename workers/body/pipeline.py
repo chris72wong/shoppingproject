@@ -153,6 +153,28 @@ def measure(path, landmarks, root):
             raise ValueError("Landmark is not on the captured surface")
     result["shoulder"] = dimension(np.linalg.norm(left - right), "landmark-distance")
     result["inseam"] = dimension(crotch[1] - mesh.bounds[0, 1], "landmark-distance")
+    # Additional landmarks are opt-in; missing anatomy remains unavailable.
+    optional_points = [np.array(landmarks[k], dtype=float) for k in ("chestFront", "chestBack", "waistFront", "waistBack", "hipFront", "hipBack", "elbowLeft", "wristLeft", "upperArmLeft", "thighLeft") if k in landmarks]
+    for point in optional_points:
+        _, distances, _ = trimesh.proximity.closest_point_naive(mesh, point.reshape(1, 3))
+        if distances[0] > .03:
+            raise ValueError("Additional landmark is not on the captured surface")
+    if "elbowLeft" in landmarks and "wristLeft" in landmarks:
+        elbow, wrist = [np.array(landmarks[k], dtype=float) for k in ("elbowLeft", "wristLeft")]
+        result["sleeve"] = dimension(np.linalg.norm(left - elbow) + np.linalg.norm(elbow - wrist), "landmark-distance")
+    for name, key, normal in (("upperArm", "upperArmLeft", left - np.array(landmarks.get("elbowLeft", left), dtype=float)), ("thigh", "thighLeft", np.array([0, 1, 0]))):
+        if key not in landmarks:
+            continue
+        if np.linalg.norm(normal) < .05:
+            raise ValueError("An upper arm section requires an elbow landmark")
+        point = np.array(landmarks[key], dtype=float)
+        section = mesh.section(plane_origin=point, plane_normal=normal)
+        loops = [] if section is None else [line for line in section.discrete if len(line) >= 4 and np.linalg.norm(line[0] - line[-1]) < .005 and np.min(np.linalg.norm(line - point, axis=1)) < .03]
+        if len(loops) != 1:
+            raise ValueError("Limb section is open or ambiguous; review or rescan")
+        result[name] = dimension(np.linalg.norm(np.diff(loops[0], axis=0), axis=1).sum(), "surface-section")
+    # Garment front/back rise and body crotch length use different measurement
+    # conventions. Do not fabricate a comparable rise from waist height alone.
     (root / "result.json").write_text(json.dumps({"measurements": result}))
 
 

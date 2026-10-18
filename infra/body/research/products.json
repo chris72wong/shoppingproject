@@ -1,0 +1,32 @@
+[
+  {
+    "brand": "UNIQLO", "sku": "489929", "region": "US", "variant": "00 WHITE",
+    "category": "top", "name": "Crew Neck T-Shirt", "identityStatus": "needs-sample-label-check",
+    "composition": "Published fabric details: 100% cotton for the displayed white variant.",
+    "construction": "Published description identifies heavyweight jersey and a bound neckline. Panel shapes, seam allowances and physical fabric properties remain unknown.",
+    "sources": [{ "url": "https://www.uniqlo.com/us/en/products/E422992-000/00?colorDisplayCode=00&sizeDisplayCode=002", "retrievedAt": "2026-10-18T02:25:00Z", "kind": "product", "note": "Observed page describes product 489929 and lists alternate IDs 485563, 482296, 475356. The legacy URL does not establish interchangeable measurements. Multiple product images and size labels are visible; per-size finished dimensions were not accessible in the retrieved page. Add-to-cart UI is not a stock guarantee." }],
+    "sizes": [{"label":"XXS","dimensions":{}},{"label":"XS","dimensions":{}},{"label":"S","dimensions":{}},{"label":"M","dimensions":{}},{"label":"L","dimensions":{}},{"label":"XL","dimensions":{}},{"label":"XXL","dimensions":{}},{"label":"3XL","dimensions":{}}],
+    "missingEvidence": ["Confirm sample label SKU matches the researched revision", "Obtain finished chest, shoulder, sleeve, upper-arm and body-length measurements by size", "Record retailer measurement conventions and size-guide source", "Obtain licensed patterns or operator-reviewed panel reconstruction", "Obtain physical samples, calibrate fabric and complete blinded fitting trial"],
+    "sampleStatus": "not-obtained"
+  },
+  {
+    "brand": "UNIQLO", "sku": "482880", "region": "US", "variant": "69 NAVY",
+    "category": "bottom", "name": "Chino Pants", "identityStatus": "needs-sample-label-check",
+    "composition": "Published fabric details: 100% cotton.",
+    "construction": "Published description specifies regular fit, tapered legs and pockets. Waist size labels are not evidence of finished waistband circumference or inseam length.",
+    "sources": [{ "url": "https://www.uniqlo.com/us/en/products/E482880-000/00?colorDisplayCode=69", "retrievedAt": "2026-10-18T02:25:00Z", "kind": "product", "note": "US page identifies 482880 and navy 69, multiple product views, and inch-based waist labels. Finished measurements and inseam variants were not accessible in the retrieved page. Confirm sample availability for each trial size." }],
+    "sizes": [{"label":"27inch","dimensions":{}},{"label":"28inch","dimensions":{}},{"label":"29inch","dimensions":{}},{"label":"30inch","dimensions":{}},{"label":"31inch","dimensions":{}},{"label":"32inch","dimensions":{}},{"label":"33inch","dimensions":{}},{"label":"34inch","dimensions":{}},{"label":"35inch","dimensions":{}},{"label":"36inch","dimensions":{}},{"label":"38inch","dimensions":{}},{"label":"40inch","dimensions":{}}],
+    "missingEvidence": ["Confirm sample SKU, size and unaltered inseam", "Obtain finished waist, hip, thigh, inseam and rise dimensions for each supported size", "Record front/back rise conventions separately from body crotch length", "Digitize panels, waistband, closures and pocket construction", "Calibrate fabric and validate samples and layered fittings"],
+    "sampleStatus": "not-obtained"
+  },
+  {
+    "brand": "UNIQLO", "sku": "482452", "region": "US", "variant": "67 BLUE",
+    "category": "outerwear", "name": "Chambray Overshirt", "identityStatus": "needs-sample-label-check",
+    "composition": "Published fabric details: 100% cotton.",
+    "construction": "Published description specifies pre-washed slub-yarn chambray and relaxed fit. Stitch fading is visible in the referenced feature views; exact seam construction requires sample review.",
+    "sources": [{ "url": "https://www.uniqlo.com/us/en/products/E482452-000/00", "retrievedAt": "2026-10-18T02:25:00Z", "kind": "product", "note": "US page identifies 482452 and blue 67, multiple product views and S through XL labels. Finished size-table dimensions were not accessible in the retrieved page. Availability must be reconfirmed before obtaining samples." }],
+    "sizes": [{"label":"S","dimensions":{}},{"label":"M","dimensions":{}},{"label":"L","dimensions":{}},{"label":"XL","dimensions":{}}],
+    "missingEvidence": ["Confirm sample SKU and selected variant", "Obtain finished chest, shoulder, sleeve, upper-arm and body-length measurements", "Record measurement guide and closed/open configuration", "Author and review panels, collar, cuffs, closures and seams", "Measure fabric and validate individual and layered fittings"],
+    "sampleStatus": "not-obtained"
+  }
+]

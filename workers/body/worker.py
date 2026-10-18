@@ -49,7 +49,7 @@ def sweep():
         expired = db.execute("SELECT id FROM body_scans WHERE state<>'deleted' AND accessed_at<now()-interval '30 days' FOR UPDATE SKIP LOCKED").fetchall()
         for row in expired:
             db.execute("UPDATE body_scans SET state='deleted',version=version+1,metadata='{}',measurements='{}',corrections='{}',landmarks=NULL,quality='{}',display_key=NULL,collision_key=NULL,share_fit=false,error=NULL WHERE id=%s", (row["id"],))
-            db.execute("UPDATE body_tryons SET state='cancelled',result_key=NULL WHERE scan_id=%s", (row["id"],))
+            db.execute("UPDATE body_tryons SET state='cancelled',result_key=NULL,diagnostics=NULL WHERE scan_id=%s", (row["id"],))
             db.execute("UPDATE body_jobs SET state='cancelled' WHERE scan_id=%s AND kind<>'purge' AND state IN ('queued','running')", (row["id"],))
             enqueue(db, row["id"], "purge")
         for row in db.execute("SELECT id,raw_key,state FROM body_scans WHERE raw_expires_at<=now() AND raw_deleted=false FOR UPDATE SKIP LOCKED").fetchall():
@@ -136,16 +136,45 @@ def process(job):
                     size = next(s for s in garment["sizes"] if s["label"] == selection["size"])
                     asset = root / f"garment-{index}.blend"
                     download(size["blendKey"], asset)
-                    request["garments"].append({"path": str(asset), "productId": garment["productId"], "category": garment["category"]})
+                    request["garments"].append({"path": str(asset), "productId": garment["productId"], "category": garment["category"],
+                        "schemaVersion": garment["schemaVersion"], "size": size["label"], "sku": garment.get("identity", {}).get("sku"),
+                        "patternVersion": garment.get("pattern", {}).get("version"), "arrangementVersion": garment.get("arrangementVersion"), "fabric": garment.get("fabric")})
         request["input"] = str(path)
         request_path = root / "request.json"
         request_path.write_text(json.dumps(request))
         command = [os.getenv("BLENDER_BIN", "blender"), "--background", "--factory-startup", "--disable-autoexec", "--python-exit-code", "1", "--python", str(ROOT / "simulate.py"), "--", str(request_path)] if tryon else [sys.executable, str(ROOT / "pipeline.py"), str(request_path)]
         # Task logs may contain file paths/scan data. Never forward them to
         # application logs or API responses. Return controlled errors only.
-        completed = subprocess.run(command, timeout=1200, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-        if completed.returncode:
-            raise ValueError("Processing could not validate this asset. Review capture quality or garment arrangement.")
+        diagnostics = None
+        if tryon:
+            # First solve each piece independently; then all selected layers.
+            # Every solve also checks sensitivity to the declared fabric bounds.
+            deadline = time.monotonic() + 1200
+            runs = []
+            groups = [[g] for g in request["garments"]] if len(request["garments"]) > 1 else []
+            groups.append(request["garments"])
+            for group_index, group in enumerate(groups):
+                for scenario in ("lower", "nominal", "upper"):
+                    run_root = root / f"run-{group_index}-{scenario}"
+                    run_root.mkdir()
+                    run_request = run_root / "request.json"
+                    run_request.write_text(json.dumps({**request, "garments": group, "scenario": scenario}))
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, 1200)
+                    completed = subprocess.run(command[:-1] + [str(run_request)], timeout=remaining, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                    if completed.returncode:
+                        raise ValueError("Garment arrangement or fabric sensitivity failed validation")
+                    report = json.loads((run_root / "diagnostics.json").read_text())
+                    runs.append({"mode": "layered" if group_index == len(groups) - 1 else "individual", **report})
+                    if group_index == len(groups) - 1 and scenario == "nominal":
+                        (run_root / "result.glb").replace(root / "result.glb")
+            diagnostics = {"status": "estimated", "solverVersion": "blender-cloth-v2", "runs": runs,
+                "limitations": "Fixed-pose appearance and sensitivity estimates; no pressure or comfort validation."}
+        else:
+            completed = subprocess.run(command, timeout=1200, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            if completed.returncode:
+                raise ValueError("Processing could not validate this asset. Review capture quality or garment arrangement.")
         with connect() as db:
             current = db.execute("SELECT * FROM body_scans WHERE id=%s FOR UPDATE", (scan_id,)).fetchone()
             lease = db.execute("SELECT state,lease_token FROM body_jobs WHERE id=%s FOR UPDATE", (job["id"],)).fetchone()
@@ -170,7 +199,7 @@ def process(job):
                     return
                 key = prefix + f"/tryon-{tryon['id']}.glb"
                 publish_file(root / "result.glb", key)
-                db.execute("UPDATE body_tryons SET state='ready',progress=100,result_key=%s,error=NULL WHERE id=%s", (key, tryon["id"]))
+                db.execute("UPDATE body_tryons SET state='ready',progress=100,result_key=%s,diagnostics=%s,error=NULL WHERE id=%s", (key, Jsonb(diagnostics), tryon["id"]))
             db.execute("UPDATE body_jobs SET state='done' WHERE id=%s AND lease_token=%s", (job["id"], job["lease_token"]))
 
 
@@ -179,6 +208,8 @@ def fail(job, error):
     # attempts. Purges retry indefinitely because deletion must eventually finish.
     retry = job["kind"] == "purge" or (not isinstance(error, (ValueError, subprocess.TimeoutExpired)) and job["attempts"] < 3)
     message = "Processing timed out; try a smaller capture." if isinstance(error, subprocess.TimeoutExpired) else "Processing failed. Check capture quality and service configuration."
+    if job["kind"] == "simulate" and isinstance(error, ValueError):
+        message = "Clothing could not pass arrangement, settling, collision or fabric-sensitivity checks. Ask the operator to review the scan and garment asset versions."
     with connect() as db:
         db.execute("SELECT id FROM body_scans WHERE id=%s FOR UPDATE", (job["scan_id"],))
         lease = db.execute("SELECT state,lease_token FROM body_jobs WHERE id=%s FOR UPDATE", (job["id"],)).fetchone()

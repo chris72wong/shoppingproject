@@ -12,15 +12,18 @@ async function api(path: string, method = "GET", data?: unknown) {
   const value = await response.json(); if (!response.ok) throw new Error(value.error || "Body scan request failed."); return value;
 }
 const landmarkKeys = ["chestY", "waistY", "hipY", "shoulderLeft", "shoulderRight", "crotch"] as const;
+const extraLandmarkKeys = ["chestFront", "chestBack", "waistFront", "waistBack", "hipFront", "hipBack", "elbowLeft", "wristLeft", "upperArmLeft", "thighLeft"] as const;
+const allLandmarkKeys = [...landmarkKeys, ...extraLandmarkKeys];
 export default function BodyPanel({ onPreview }: { onPreview?: (preview: BodyPreview | undefined) => void }) {
   const [enabled, setEnabled] = useState(false), [identity, setIdentity] = useState<{ role: string } | null>(null);
   const [scans, setScans] = useState<BodyScan[]>([]), [selected, setSelected] = useState<string>("");
   const [assets, setAssets] = useState<GarmentAsset[]>([]), [sizes, setSizes] = useState<Record<string,string>>({});
+  const [research, setResearch] = useState<{ sku: string; name: string; variant: string; composition: string; sources: { url: string }[]; missingEvidence: string[] }[]>([]);
   const [job, setJob] = useState<TryOnJob | null>(null), [assessments, setAssessments] = useState<FitAssessment[]>([]);
   const [error, setError] = useState(""), [busy, setBusy] = useState(false), [notice, setNotice] = useState("");
   const [qr, setQr] = useState(""), [pairExpiry, setPairExpiry] = useState(0);
   const [reviews, setReviews] = useState<BodyScan[]>([]), [reviewId, setReviewId] = useState("");
-  const [landmarks, setLandmarks] = useState<Partial<ReviewLandmarks>>({}), [picking, setPicking] = useState<typeof landmarkKeys[number]>("chestY");
+  const [landmarks, setLandmarks] = useState<Partial<ReviewLandmarks>>({}), [picking, setPicking] = useState<typeof allLandmarkKeys[number]>("chestY");
   const scan = scans.find(s => s.id === selected), review = reviews.find(s => s.id === reviewId);
   const load = useCallback(async () => { const result = await api("scans"); setScans(result.scans); }, []);
   useEffect(() => { let active = true; void api("config").then(async config => {
@@ -28,6 +31,7 @@ export default function BodyPanel({ onPreview }: { onPreview?: (preview: BodyPre
     try { const session = await api("session"); if (active) { setIdentity(session); await load(); } } catch { /* Invitation form is the signed-out state. */ }
   }).catch(() => {}); return () => { active = false; }; }, [load]);
   useEffect(() => { if (!identity) return; void api("garments").then(r => setAssets(r.garments)).catch(e => setError(e.message)); }, [identity]);
+  useEffect(() => { if (!identity) { setResearch([]); return; } let active = true; void api("garment-research").then(r => { if (active) setResearch(r.products); }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, [identity]);
   useEffect(() => {
     if (!identity || !scans.some(s => ["uploading", "processing", "review"].includes(s.state))) return;
     const interval = setInterval(() => { void load().catch(e => setError(e.message)); }, 5000); return () => clearInterval(interval);
@@ -90,20 +94,25 @@ export default function BodyPanel({ onPreview }: { onPreview?: (preview: BodyPre
           <button disabled={busy} onClick={() => void run(async () => { await api(`scans/${scan.id}`, "DELETE"); setSelected(""); setJob(null); await load(); })}>Delete scan and results</button>
           {preview && !onPreview && <Viewer preview={preview} onError={setError} />}
           {scan.state === "ready" && <>
-            <p>{preview?.simulated ? "Simulated clothing preview · sizing is validated separately." : "Body scan only · existing demo clothing is not overlaid."}</p>
+            <button disabled={busy} onClick={() => void run(async () => { await api(`scans/${scan.id}/fit-review`, "POST", { version: scan.version }); setJob(null); setAssessments([]); await load(); })}>Request garment landmark review (clears measurements and previous results)</button>
+            <p>{preview?.simulated ? "Estimated clothing preview · fixed pose. Physical fit and comfort are not established by the image." : "Body scan only · existing demo clothing is not overlaid."}</p>
             <form key={scan.id + scan.version} onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); const values: Partial<Record<MeasurementName,number>> = {}; measurementNames.forEach(k => { if (form.get(k)) values[k] = Number(form.get(k)) / 100; }); void run(async () => { await api(`scans/${scan.id}/corrections`, "PATCH", { version: scan.version, values }); setJob(null); setAssessments([]); await load(); }); }}>
               <h3>Measurements</h3><p>Original measurements remain unchanged. Manual corrections are unvalidated and invalidate previous fit results.</p>
               {measurementNames.map(k => <label key={k}>{k} (cm) · original {scan.measurements[k] ? `${(scan.measurements[k]!.value * 100).toFixed(1)} ± ${(scan.measurements[k]!.uncertainty * 100).toFixed(1)}, ${scan.measurements[k]!.overClothing ? "over capture clothing, " : ""}${scan.measurements[k]!.quality}` : "unavailable"}<input name={k} type="number" min={5} max={250} step="0.1" defaultValue={scan.corrections[k] ? scan.corrections[k]!.value * 100 : ""} placeholder="Optional correction" /></label>)}
               <button disabled={busy}>Save corrections</button>
             </form>
             <h3>Pilot garments</h3>
+            {!!research.length && <details><summary>Garment research · awaiting samples and measurements</summary>{research.map(product => <article key={product.sku}><h4>{product.name} · {product.sku} · {product.variant}</h4><p>{product.composition}</p><a href={product.sources[0].url} target="_blank" rel="noreferrer">Researched product page</a><ul>{product.missingEvidence.map(item => <li key={item}>{item}</li>)}</ul></article>)}</details>}
             {!assets.length && <p>No measured garment assets are available yet. Demo catalog illustrations cannot establish drape or size.</p>}
-            {assets.map(asset => <label key={asset.id}>{asset.name}<select value={sizes[asset.id] || ""} onChange={e => { setSizes(v => ({ ...v, [asset.id]: e.target.value })); setJob(null); setAssessments([]); }}><option value="">Do not include</option>{asset.sizes.map(s => <option key={s.label}>{s.label}</option>)}</select></label>)}
+            {assets.map(asset => <label key={asset.id}>{asset.name} · {asset.identity ? `${asset.identity.brand} ${asset.identity.sku} / ${asset.identity.variant}` : "Legacy asset"} · {asset.validation?.status === "validated" ? "physically validated within tested coverage" : "estimated evidence"}<select value={sizes[asset.id] || ""} onChange={e => { setSizes(v => ({ ...v, [asset.id]: e.target.value })); setJob(null); setAssessments([]); }}><option value="">Do not include</option>{asset.sizes.map(s => <option key={s.label}>{s.label}</option>)}</select></label>)}
             <button disabled={busy || !Object.values(sizes).some(Boolean)} onClick={() => void run(async () => {
               const result = await api("tryons", "POST", { scanId: scan.id, version: scan.version, garments: Object.entries(sizes).filter(([,size]) => size).map(([garmentId,size]) => ({ garmentId,size })) }); setJob(result.job); setAssessments(result.assessments);
             })}>Simulate selected clothing</button>
             {job && <p role="status">Clothing: {job.state} · {job.progress}% {job.error}</p>}
-            {assessments.map(a => <p key={a.garmentId}>Sizing: {a.status === "recommended" ? a.size : "withheld"} · {a.reason}</p>)}
+            {assessments.map(a => <article key={a.garmentId}><p>Sizing: {a.status === "recommended" ? a.size : "withheld"} · {a.reason}</p>
+              {a.candidates && <details><summary>Compare sizes and body regions</summary>{a.candidates.map(c => <div key={c.size}><strong>{c.size}</strong><ul>{c.regions.map(r => <li key={r.region}>{r.region}: {r.status}{r.easeM ? ` · estimated dimensional ease ${(r.easeM[0] * 100).toFixed(1)}–${(r.easeM[1] * 100).toFixed(1)} cm` : ""}. {r.reason}</li>)}</ul></div>)}</details>}
+            </article>)}
+            {job?.diagnostics && <p>Simulation includes individual/layered checks and fabric-bound sensitivity estimates. These do not measure pressure or comfort.</p>}
             <label className="body-check"><input type="checkbox" checked={scan.shareFit} disabled={busy} onChange={event => { const shareFit = event.target.checked; void run(async () => { await api(`scans/${scan.id}/consent`, "PATCH", { shareFit }); await load(); }); }} />Allow a server-derived fit summary in stylist chat. Scans and measurements are excluded.</label>
           </>}
         </article>}
@@ -113,11 +122,13 @@ export default function BodyPanel({ onPreview }: { onPreview?: (preview: BodyPre
           <label>Capture to review<select value={reviewId} onChange={e => { setReviewId(e.target.value); setLandmarks({}); }}><option value="">Choose scan</option>{reviews.map(s => <option key={s.id} value={s.id}>{s.id} · {s.source}</option>)}</select></label>
           {review?.displayUrl && <>
             <p>Check segmentation, metric scale, coverage, close-fitting clothing, and A-pose. Reject substantial holes or invented geometry. Click each landmark on the mesh.</p>
-            <label>Landmark<select value={picking} onChange={e => setPicking(e.target.value as typeof picking)}>{landmarkKeys.map(k => <option key={k}>{k}</option>)}</select></label>
+            <p>For garment fitting, select front/back torso points at the corresponding chest/waist/hip heights. Limb points are optional; upper-arm extraction also requires the elbow. Missing dimensions remain unavailable.</p>
+            <label>Landmark<select value={picking} onChange={e => setPicking(e.target.value as typeof picking)}>{allLandmarkKeys.map(k => <option key={k}>{k}</option>)}</select></label>
             <Viewer preview={{ url: review.displayUrl, height: review.confirmedHeight, version: review.version, simulated: false }} onError={setError} onPoint={point => setLandmarks(v => ({ ...v, [picking]: picking.endsWith("Y") ? point[1] : point }))} />
-            <ul>{landmarkKeys.map(k => <li key={k}>{k}: {landmarks[k] === undefined ? "not selected" : JSON.stringify(landmarks[k])}</li>)}</ul>
-            <form onSubmit={event => { event.preventDefault(); void run(async () => { await api(`review/${review.id}`, "POST", { version: review.version, approve: true, segmentationConfirmed: true, closeClothingConfirmed: true, landmarks }); setReviews((await api("review")).scans); setReviewId(""); await load(); }); }}>
+            <ul>{allLandmarkKeys.map(k => <li key={k}>{k}: {landmarks[k] === undefined ? "not selected" : JSON.stringify(landmarks[k])}</li>)}</ul>
+            <form onSubmit={event => { event.preventDefault(); const fitReviewConfirmed = new FormData(event.currentTarget).get("fitReview") === "on"; void run(async () => { await api(`review/${review.id}`, "POST", { version: review.version, approve: true, segmentationConfirmed: true, closeClothingConfirmed: true, ...(fitReviewConfirmed ? { fitReviewConfirmed: true } : {}), landmarks }); setReviews((await api("review")).scans); setReviewId(""); await load(); }); }}>
               <label className="body-check"><input type="checkbox" required />I confirm segmentation and close-fitting capture clothing.</label>
+              <label className="body-check"><input name="fitReview" type="checkbox" />I reviewed the A-pose, metric scale, critical surface coverage and capture clothing for garment simulation.</label>
               <button disabled={busy || landmarkKeys.some(k => landmarks[k] === undefined)}>Approve for measurement extraction</button>
             </form>
             <button disabled={busy} onClick={() => void run(async () => { await api(`review/${review.id}`, "POST", { version: review.version, approve: false }); setReviews((await api("review")).scans); setReviewId(""); await load(); })}>Reject and purge capture</button>
