@@ -531,3 +531,53 @@
   .studio-preview-layout .studio-stage { grid-column: 2; grid-row: 1; width: 100%; height: 100%; }
   .studio-details-slot { grid-column: 3; grid-row: 1; max-height: 100%; overflow-y: auto; scrollbar-width: thin; align-self: start; padding: 3px; }
 }
+
+/* Keep the avatar and item choices roomy, with distinct scenery and lighting. */
+.studio-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 8px 4px 18px; flex-shrink: 0; }
+.studio-toolbar h1 { font: 26px/1.3 var(--serif); letter-spacing: 0; }
+.studio-toolbar p { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.scenery-picker { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.scenery-picker select { padding: 9px 30px 9px 12px; border: 1px solid #cdd2c1; border-radius: 10px; background: #fffef8; }
+.studio-workspace .studio-stage { border-radius: 24px; overflow: hidden; background-position: center; background-size: cover; background-color: #e9e8df; }
+.studio-stage.scenery-outdoors { background-image: url('/scenery/outdoors.svg'); }
+.studio-stage.scenery-indoors { background-image: url('/scenery/indoors.svg'); }
+.studio-stage.scenery-beach { background-image: url('/scenery/beach.svg'); }
+.studio-stage.scenery-forest { background-image: url('/scenery/forest.svg'); }
+.scenery-caption { position: absolute; z-index: 1; left: 16px; bottom: 14px; max-width: calc(100% - 32px); padding: 4px 10px; border-radius: 8px; background: #fffef8dd; color: #4f5941; font-size: 11px; pointer-events: none; }
+.studio-item-card { padding: 24px; }
+.studio-item-card h3 { font: 24px/1.4 var(--serif); }
+.studio-item-card > p, .outfit-data-note { font-size: 13px; line-height: 1.7; }
+.studio-item-card h4 { font-size: 16px; margin-top: 20px; }
+.studio-item-card strong { font-size: 15px; }
+.studio-retailer { font-size: 13px; }
+.swap-choice { padding: 12px; gap: 14px; }
+.swap-choice img { width: 76px; height: 86px; flex: 0 0 76px; object-fit: contain; background: #fffef8; border-radius: 8px; }
+.swap-choice span { font-size: 14px; line-height: 1.5; min-width: 0; }
+.swap-choice small { font-size: 12px; line-height: 1.5; }
+.avatar-item-controls { gap: 8px; }
+.avatar-item-controls button { font-size: 13px; padding: 8px 14px; }
+.studio-feedback button { font-size: 13px; }
+.swap-notice { font-size: 12px; text-align: center; color: #5d7045; min-height: 0; margin: 4px 0; }
+.studio-details-slot { max-height: 34dvh; }
+@container (min-width: 960px) {
+ .studio-preview-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(300px, 380px); gap: 24px; }
+ .studio-details-slot { max-height: 100%; }
+}
+@media (max-width: 650px) {
+ .studio-toolbar { align-items: flex-start; gap: 12px; padding-bottom: 12px; }
+ .studio-toolbar h1 { font-size: 21px; }
+ .studio-toolbar p { font-size: 12px; }
+ .scenery-picker { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 12px; }
+ .scenery-picker select { max-width: 132px; padding: 7px; }
+ .studio-item-card { padding: 20px; }
+ .studio-preview-layout { min-height: 200px; }
+}
+
+@media (max-width: 959px) {
+ .studio-workspace { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
+ .studio-workspace .outfit-studio { height: auto; flex-shrink: 0; }
+ .studio-preview-layout { display: flex; flex-direction: column; flex: none; }
+ .studio-preview-layout .studio-stage { height: clamp(300px, 46dvh, 460px); min-height: 300px; flex: none; }
+ .studio-details-slot { max-height: none; overflow: visible; }
+ .studio-workspace .conversation { margin: auto auto 0; }
+}

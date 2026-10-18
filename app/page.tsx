@@ -5,6 +5,9 @@ import { generate } from "@/lib/agent";
 import type { ConversationResponse } from "@/lib/conversation";
 import { restore, serializeStore, Store } from "@/lib/storage";
 import { ConversationMessage, Outfit, Product } from "@/lib/types";
+import { product } from "@/lib/catalog";
+import { rememberOutfits, swapLook } from "@/lib/look-history";
+import { total } from "@/lib/agent";
 import { swapItem } from "@/lib/swaps";
 import VoiceStylist from "@/components/VoiceStylist";
 import OutfitStudio from "@/components/OutfitStudio";
@@ -20,6 +23,7 @@ const profile: Store["profile"] = {
   weights: {},
   inspiration: [],
 };
+const starterOutfits = generate("Everyday outfits under $250", profile);
 const initial: Store = {
   profile,
   scan: {
@@ -31,7 +35,9 @@ const initial: Store = {
     shoulder: 44,
     fit: "Regular",
   },
-  outfits: generate("Everyday outfits under $250", profile),
+  outfits: starterOutfits,
+  lookHistory: rememberOutfits([], starterOutfits),
+  scenery: "studio",
   saved: [],
   wardrobe: ["u-tee", "jeans", "stan"].map((productId) => ({
     id: "owned-" + productId,
@@ -55,6 +61,7 @@ export default function App() {
     [pending, setPending] = useState("");
   const [selection, setSelection] = useState<Selection | null>(null),
     [viewIndex, setViewIndex] = useState(0);
+  const [historyView, setHistoryView] = useState<"looks" | "prompts">("looks");
   const [editing, setEditing] = useState<string | null>(null);
   const historyDialog = useRef<HTMLDialogElement>(null);
   const historyButton = useRef<HTMLButtonElement>(null);
@@ -155,7 +162,7 @@ export default function App() {
       role: "user",
       text: request,
     };
-    setS((v) => ({ ...v, messages: [...history, user] }));
+    setS((v) => ({ ...v, lookHistory: rememberOutfits(v.lookHistory, [...v.outfits, ...(context?.outfits ?? [])]), messages: [...history, user] }));
     const abort = new AbortController();
     controller.current = abort;
     try {
@@ -207,6 +214,7 @@ export default function App() {
         outfits: result.outfits || context?.outfits || (editIndex >= 0 ? initial.outfits : v.outfits),
         selected: Math.max(0, result.selected ?? v.selected),
         messages: [...v.messages, message],
+        lookHistory: rememberOutfits(v.lookHistory, result.outfits ?? []),
       }));
       setPending(result.pending || "");
       if (result.weatherError) setNotice("Weather could not be checked: " + result.weatherError);
@@ -267,13 +275,13 @@ export default function App() {
   }
   const visible = selection ?? { outfits: s.outfits, index: Math.min(viewIndex, s.outfits.length - 1) };
   function swap(oldId: string, replacement: Product) {
+    if (submitting.current || !ready) return;
     const current = visible.outfits[visible.index];
     const updated = swapItem(current, oldId, replacement, s.wardrobe.map((i) => i.productId), s.custom);
     if (updated === current) return;
-    const replace = (looks: Outfit[]) => looks.map((o) => o.id === current.id && JSON.stringify(o) === JSON.stringify(current) ? snapshot([updated])[0] : o);
-    const context = { ...visible, outfits: replace(visible.outfits) };
+    const context = { ...visible, outfits: swapLook(visible.outfits, visible.index, updated) };
     setSelection(context);
-    setS((v) => ({ ...v, outfits: replace(v.outfits), saved: replace(v.saved), messages: v.messages.map((m) => m.outfits ? { ...m, outfits: replace(m.outfits) } : m) }));
+    setS((v) => ({ ...v, outfits: context.outfits, lookHistory: rememberOutfits(v.lookHistory, [...visible.outfits, updated]) }));
   }
   const started = s.messages.length > 0;
   return (
@@ -282,6 +290,8 @@ export default function App() {
       <div className="studio-workspace">
       <OutfitStudio outfits={visible.outfits} index={visible.index} scan={s.scan} extra={s.custom}
         bodyPreview={bodyPreview}
+        sceneryId={s.scenery ?? "studio"}
+        onScenery={(scenery) => setS((v) => ({ ...v, scenery }))}
         budget={s.profile.budget} wardrobe={s.wardrobe.map((item) => item.productId)}
         disabled={busy || !ready}
         onSelect={(index) => { setViewIndex(index); setSelection({ outfits: visible.outfits, index }); }}
@@ -297,10 +307,21 @@ export default function App() {
           <div className="history-panel">
             <button className="history-new-chat" onClick={newConversation} disabled={busy || !ready}><Plus size={14} /> New chat</button>
             <header className="history-heading">
-              <div><p className="eyebrow">YOUR STYLE JOURNEY</p><h2 id="history-title">Prompt history</h2></div>
-              <button type="button" aria-label="Close prompt history" onClick={closeHistory}><X size={20} /></button>
+              <div><p className="eyebrow">YOUR STYLE JOURNEY</p><h2 id="history-title">Your style history</h2></div>
+              <button type="button" aria-label="Close style history" onClick={closeHistory}><X size={20} /></button>
             </header>
-            <p className="history-intro">Revisit a look, or edit a prompt in the main box to take it in a new direction.</p>
+            <div className="history-tabs" aria-label="History views">
+              <button aria-pressed={historyView === "looks"} onClick={() => setHistoryView("looks")}>Outfits · {s.lookHistory?.length ?? 0}</button>
+              <button aria-pressed={historyView === "prompts"} onClick={() => setHistoryView("prompts")}>Prompts</button>
+            </div>
+            <p className="history-intro">{historyView === "looks" ? "Every look and item swap is kept on this device, even when you start a new chat. Select a look to try it again." : "Edit a prompt to take it in a new direction. Your previous looks stay in outfit history."}</p>
+            {historyView === "looks" && <div className="look-history-grid">
+              {[...(s.lookHistory ?? [])].reverse().map((outfit, index) => <button className="look-history-card" key={index} disabled={busy || !ready} onClick={() => { setSelection({ outfits: snapshot([outfit, ...s.outfits.slice(1)]), index: 0 }); closeHistory(); }}>
+                <div className="look-history-images">{outfit.items.map((item) => { const piece = product(item.productId, s.custom); return <img key={item.productId} src={piece.image} alt={piece.name} loading="lazy" />; })}</div>
+                <strong>{outfit.name}</strong><span>${total(outfit, s.custom).toFixed(2)} USD · Try this look</span>
+              </button>)}
+            </div>}
+            <div className="prompt-history-content" hidden={historyView !== "prompts"}>
             <div className="weather-location"><span role="status">{locationStatus}</span><button type="button" disabled={busy || locationStatus.startsWith("Requesting")} onClick={locate}>Refresh location</button></div>
             {!started && <p className="history-empty">Your prompts will appear here once you start a conversation.</p>}
           <section
@@ -334,6 +355,7 @@ export default function App() {
             )}
             <div ref={bottom} />
           </section>
+            </div>
             <button className="history-return" type="button" onClick={() => { closeHistory(); requestAnimationFrame(() => composer.current?.focus()); }}>Back to your look</button>
           </div>
         </dialog>
@@ -347,7 +369,7 @@ export default function App() {
             if (start && touch.clientY - start.y > 55 && Math.abs(touch.clientX - start.x) < 45) openHistory();
           }}>
           {busy && <div className="composer-status" role="status"><Sparkles size={13} /> Styling…</div>}
-          {editing && <div className="editing-context"><Pencil size={12} /><span>Editing a past prompt · Sending replaces the conversation from here.</span><button type="button" disabled={busy} onClick={() => { setEditing(null); setInput(""); }}>Cancel</button></div>}
+          {editing && <div className="editing-context"><Pencil size={12} /><span>Editing a past prompt · Previous looks stay in history.</span><button type="button" disabled={busy} onClick={() => { setEditing(null); setInput(""); }}>Cancel</button></div>}
           {selection && (
             <div className="selection-context">
               <Check size={13} /> Look {selection.index + 1}
@@ -405,7 +427,7 @@ export default function App() {
           </form>
           <button ref={historyButton} type="button" className="history-toggle" aria-haspopup="dialog" aria-controls="prompt-history" onClick={openHistory}>
             <span className="history-handle" aria-hidden="true" />
-            <span><History size={13} /> Prompt history{started ? ` · ${s.messages.filter((message) => message.role === "user").length}` : ""}<ChevronDown size={13} /></span>
+            <span><History size={13} /> Style history{started ? ` · ${s.messages.filter((message) => message.role === "user").length}` : ""}<ChevronDown size={13} /></span>
           </button>
           {notice && (
             <p className="storage-notice" role="status">

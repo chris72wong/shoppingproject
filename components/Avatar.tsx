@@ -3,6 +3,7 @@ import { Component, ReactNode, Suspense, useEffect, useRef, useState } from "rea
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
 import { Category, Outfit, Product, ScanProfile } from "@/lib/types";
+import { scenery, type Scenery } from "@/lib/scenery";
 import { product } from "@/lib/catalog";
 import { Group, PerspectiveCamera, Vector2 } from "three";
 import { FlatAvatar } from "./FlatAvatar";
@@ -181,6 +182,7 @@ export default function Avatar({
   onSelectItem,
   interactive = true,
   bodyPreview,
+  sceneryId = "studio",
 }: {
   outfit: Outfit;
   profile: ScanProfile;
@@ -191,7 +193,9 @@ export default function Avatar({
   onSelectItem?: (id: string) => void;
   interactive?: boolean;
   bodyPreview?: BodyPreview;
+  sceneryId?: Scenery;
 }) {
+  const lighting = scenery[sceneryId];
   const [rotating, setRotating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
   useEffect(() => {
@@ -231,9 +235,9 @@ export default function Avatar({
         aria-label={bodyPreview ? "Personal body scan. Drag to rotate." : "Interactive 3D fashion mannequin. Drag to rotate. Click a garment for details."}
       >
         <FrameAvatar profile={profile} />
-        <ambientLight intensity={1.7} />
-        <directionalLight position={[3, 6, 4]} intensity={3} castShadow />
-        <directionalLight position={[-3, 2, -3]} intensity={1.2} />
+        <ambientLight intensity={lighting.ambient} />
+        <directionalLight position={[...lighting.position]} intensity={lighting.key} color={lighting.color} castShadow />
+        <directionalLight position={[-3, 2, -3]} intensity={lighting.fill} />
         <Suspense fallback={null}>
           <group rotation={[0, angle, 0]} scale={zoom}>
             {bodyPreview ? <BodyMesh preview={bodyPreview} onItem={onItem} onError={setMeshError} /> : <Mannequin outfit={outfit} profile={profile} extra={extra} onItem={onItem} onSelectItem={onSelectItem} paused={rotating || reducedMotion || !interactive} />}

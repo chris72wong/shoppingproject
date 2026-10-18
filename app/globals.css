@@ -572,3 +572,41 @@ p {
 .history-toggle { flex-direction: row; gap: 0; padding: 6px 16px; }
 .history-handle { display: none; }
 .history-new-chat { display: flex; align-items: center; gap: 6px; align-self: flex-end; padding: 0 0 16px; font-size: 12px; }
+
+/* Give copy a comfortable measure and the history sheet its own scroll area. */
+:root { --serif: Georgia, "Times New Roman", serif; }
+body { font-size: 15px; line-height: 1.6; font-stretch: normal; }
+.studio-workspace .conversation { width: min(840px, 100%); }
+.history-dialog { width: min(960px, calc(100% - 24px)); max-height: 88dvh; }
+.history-panel { height: min(84dvh, 880px); padding: 28px 36px 22px; gap: 18px; overflow: hidden; }
+.history-heading, .history-intro, .history-tabs, .history-new-chat { flex-shrink: 0; }
+.history-heading h2 { font-size: 30px; line-height: 1.25; }
+.history-new-chat { padding: 0; }
+.history-intro { font-size: 14px; line-height: 1.7; margin: 0; max-width: 76ch; }
+.history-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.history-tabs button { font-size: 14px; padding: 8px 18px; border-radius: 20px; }
+.history-tabs button[aria-pressed="true"] { background: #e4ebd5; color: #40532f; }
+.prompt-history-content:not([hidden]) { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 12px; }
+.history-panel .messages { padding: 12px 8px 8px 0; scrollbar-width: thin; }
+.history-panel .message { margin-bottom: 24px; padding: 20px; border: 1px solid var(--line); border-radius: 16px; }
+.history-panel .message-user { max-width: 92%; }
+.history-panel .message-text { font-size: 15px; line-height: 1.8; max-width: 76ch; overflow-wrap: break-word; }
+.history-panel .message-author { font-size: 11px; letter-spacing: 1px; }
+.history-panel .edit-prompt-button { margin-top: 14px; font-size: 12px; }
+.history-return { font-size: 14px; }
+.weather-location { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 12px; }
+.weather-location button { font-size: 12px; }
+.look-history-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; overflow-y: auto; min-height: 0; padding: 4px; flex: 1; align-content: start; }
+.look-history-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; text-align: left; border: 1px solid #d6dacb; border-radius: 14px; background: #fffef8; }
+.look-history-card:hover { border-color: #829663; }
+.look-history-card strong { font-size: 15px; font-weight: 550; line-height: 1.5; }
+.look-history-card > span { font-size: 12px; color: #657153; }
+.look-history-images { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 4px; width: 100%; height: 130px; background: #f0f0e7; border-radius: 8px; padding: 8px; }
+.look-history-images img { width: 100%; height: 54px; object-fit: contain; }
+@media (max-width: 650px) {
+ .history-panel { padding: 22px 18px; gap: 14px; }
+ .history-heading h2 { font-size: 25px; }
+ .look-history-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+ .history-panel .message { padding: 16px; }
+ .history-panel .message-user { max-width: 100%; }
+}
